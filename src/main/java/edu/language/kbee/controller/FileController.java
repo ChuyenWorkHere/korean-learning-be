@@ -25,7 +25,7 @@ public class FileController {
     public ResponseEntity<Map<String, String>> uploadAudio(@RequestParam("file") MultipartFile file) {
         Map<String, String> response = new HashMap<>();
         try {
-            String fileUrl = cloudinaryService.uploadFile(file);
+            String fileUrl = cloudinaryService.uploadAudio(file);
 
             response.put("url", fileUrl);
             response.put("fileName", file.getOriginalFilename());
@@ -46,6 +46,33 @@ public class FileController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/upload_image")
+    public ResponseEntity<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            String fileUrl = cloudinaryService.uploadImage(file);
+            response.put("url", fileUrl);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", "Failed to upload image: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @PostMapping("/upload_avatar")
+    public ResponseEntity<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        Map<String, String> response = new HashMap<>();
+        try {
+            String fileUrl = cloudinaryService.uploadImage(file);
+            response.put("url", fileUrl);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", "Lỗi khi tải ảnh lên Cloudinary: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }

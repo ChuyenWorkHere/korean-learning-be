@@ -26,19 +26,4 @@ public class UserCourse extends DateAuditing {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Builder.Default
-    @Column(name = "progress_percentage", nullable = false)
-    private Integer progressPercentage = 0;
-
-    @Builder.Default
-    @Column(name = "completed_lessons", nullable = false)
-    private Integer completedLessons = 0;
-
-    @Builder.Default
-    @Column(name = "is_completed", nullable = false)
-    private boolean isCompleted = false;
-
-    @Builder.Default
-    @Column(name = "is_locked", nullable = false)
-    private boolean isLocked = false;
 }

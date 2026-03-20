@@ -1,9 +1,11 @@
 package edu.language.kbee.service;
 
 import edu.language.kbee.payload.LessonDto;
+import edu.language.kbee.payload.request.LessonCompletionRequest;
 import org.jspecify.annotations.Nullable;
 
 import java.util.List;
+import java.util.Map;
 
 public interface LessonService {
     LessonDto createLesson(LessonDto lessonDto);
@@ -15,5 +17,5 @@ public interface LessonService {
 
     LessonDto toggleLessonStatus(String lessonId);
 
-    String completeLessonByUser(String lessonId);
+    Map<String, String> completeLessonByUser(String lessonId, LessonCompletionRequest request);
 }

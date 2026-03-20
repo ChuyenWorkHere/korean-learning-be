@@ -43,11 +43,17 @@ public class User extends DateAuditing {
     private String userAvatar;
 
     @Builder.Default
+    private int currentStreak = 0;
+
+    private LocalDate lastActivityDate;
+
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn( name = "role_id"))
     private Set<Role> roles = new HashSet<>();
+
 
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -56,4 +62,12 @@ public class User extends DateAuditing {
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonProgress> lessonProgresses = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FlashcardDeck> flashcardDecks = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FlashcardProgress> flashcardProgresses = new ArrayList<>();
 }

@@ -86,7 +86,6 @@ public class UnitServiceImpl implements UnitService {
                 .filter(lesson -> lesson.getStatus() == LessonStatus.PUBLISHED)
                 .map(lesson -> {
                     LessonProgress prog = progressMap.get(lesson.getLessonId());
-
                     return LessonProgressDto.builder()
                             .lessonId(lesson.getLessonId())
                             .unitId(lesson.getUnit().getUnitId())
@@ -99,37 +98,65 @@ public class UnitServiceImpl implements UnitService {
                 })
                 .collect(Collectors.groupingBy(LessonProgressDto::getUnitId));
 
-        setLessonProgressStatus(lessonsByUnit);
 
         List<UserUnitDto> result = new ArrayList<>();
 
-        boolean isPreviousUnitCompleted = true;
+        boolean canUnlockNext = true;
 
         for (Unit u : units) {
             UserUnitDto temp = modelMapper.map(u, UserUnitDto.class);
             temp.setCourseId(courseId);
 
-            List<LessonProgressDto> unitLessons = lessonsByUnit.getOrDefault(u.getUnitId(), new ArrayList<>());
+            List<LessonProgressDto> unitLessons = lessonsByUnit.getOrDefault(u.getUnitId(), new ArrayList<>())
+                    .stream()
+                    .sorted(Comparator.comparingInt(LessonProgressDto::getOrderIndex))
+                    .collect(Collectors.toList());
 
-            ProgressStatus rawUnitStatus = getUnitProgressStatus(unitLessons);
-
-            if (!isPreviousUnitCompleted) {
-                temp.setProgressStatus(ProgressStatus.LOCKED);
-
-                for (LessonProgressDto lesson : unitLessons) {
+            for (LessonProgressDto lesson : unitLessons) {
+                if (!canUnlockNext) {
                     lesson.setStatus(ProgressStatus.LOCKED);
+                } else {
+                    if (lesson.getStatus() != ProgressStatus.COMPLETED) {
+                        canUnlockNext = false;
+                    }
                 }
-            } else {
-                temp.setProgressStatus(rawUnitStatus);
             }
 
+            ProgressStatus unitStatus = getUnitProgressStatus(unitLessons);
+            temp.setProgressStatus(unitStatus);
             temp.setLessons(unitLessons);
-            result.add(temp);
 
-            isPreviousUnitCompleted = (rawUnitStatus == ProgressStatus.COMPLETED);
+            result.add(temp);
         }
 
         return result;
+    }
+
+    private ProgressStatus getUnitProgressStatus(List<LessonProgressDto> unitLessons) {
+        if (unitLessons == null || unitLessons.isEmpty()) {
+            return ProgressStatus.NOT_STARTED;
+        }
+
+        boolean isAllLocked = unitLessons.stream()
+                .allMatch(lesson -> lesson.getStatus() == ProgressStatus.LOCKED);
+        if (isAllLocked) {
+            return ProgressStatus.LOCKED;
+        }
+
+        boolean isAllCompleted = unitLessons.stream()
+                .allMatch(lesson -> lesson.getStatus() == ProgressStatus.COMPLETED);
+        if (isAllCompleted) {
+            return ProgressStatus.COMPLETED;
+        }
+
+        boolean isAnyInProgressOrCompleted = unitLessons.stream()
+                .anyMatch(lesson -> lesson.getStatus() == ProgressStatus.IN_PROGRESS
+                        || lesson.getStatus() == ProgressStatus.COMPLETED);
+        if (isAnyInProgressOrCompleted) {
+            return ProgressStatus.IN_PROGRESS;
+        }
+
+        return ProgressStatus.NOT_STARTED;
     }
 
     @Override
@@ -196,62 +223,5 @@ public class UnitServiceImpl implements UnitService {
                 .courseId(unit.getCourse().getCourseId())
                 .lessons(lessonDtos)
                 .build();
-    }
-
-    private void setLessonProgressStatus(Map<String, List<LessonProgressDto>> lessonsByUnit) {
-
-        boolean isUnitLocked = false;
-
-        for (Map.Entry<String, List<LessonProgressDto>> entry : lessonsByUnit.entrySet()) {
-
-            List<LessonProgressDto> unitLessons = entry.getValue();
-
-            if(isUnitLocked) {
-                for (LessonProgressDto lesson : unitLessons) {
-                    lesson.setStatus(ProgressStatus.LOCKED);
-                }
-                continue;
-            }
-
-            int orderIndex = 0;
-
-            Optional<LessonProgressDto> learnedLesson = unitLessons.stream().filter(l -> l.getStatus() == ProgressStatus.IN_PROGRESS || l.getStatus() == ProgressStatus.COMPLETED).findFirst();
-            if (learnedLesson.isPresent()) {
-                orderIndex = learnedLesson.get().getOrderIndex();
-                isUnitLocked = true;
-            }
-            for (LessonProgressDto lesson : unitLessons) {
-                if(lesson.getOrderIndex() > orderIndex) {
-                    lesson.setStatus(ProgressStatus.LOCKED);
-                }
-            }
-        }
-    }
-
-    private ProgressStatus getUnitProgressStatus(List<LessonProgressDto> unitLessons) {
-        if (unitLessons == null || unitLessons.isEmpty()) {
-            return ProgressStatus.NOT_STARTED;
-        }
-
-        boolean isAllLocked = unitLessons.stream()
-                .allMatch(lesson -> lesson.getStatus() == ProgressStatus.LOCKED);
-        if (isAllLocked) {
-            return ProgressStatus.LOCKED;
-        }
-
-        boolean isAllCompleted = unitLessons.stream()
-                .allMatch(lesson -> lesson.getStatus() == ProgressStatus.COMPLETED);
-        if (isAllCompleted) {
-            return ProgressStatus.COMPLETED;
-        }
-
-        boolean isAnyInProgressOrCompleted = unitLessons.stream()
-                .anyMatch(lesson -> lesson.getStatus() == ProgressStatus.IN_PROGRESS
-                        || lesson.getStatus() == ProgressStatus.COMPLETED);
-        if (isAnyInProgressOrCompleted) {
-            return ProgressStatus.IN_PROGRESS;
-        }
-
-        return ProgressStatus.NOT_STARTED;
     }
 }

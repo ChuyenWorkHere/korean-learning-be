@@ -1,6 +1,7 @@
 package edu.language.kbee.util;
 
 import edu.language.kbee.exception.ResourceNotFoundException;
+import edu.language.kbee.enums.RoleName;
 import edu.language.kbee.model.User;
 import edu.language.kbee.repository.UserRepository;
 import org.slf4j.Logger;
@@ -30,4 +31,10 @@ public class AuthUtil {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
+    public boolean isAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) return false;
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
 }
