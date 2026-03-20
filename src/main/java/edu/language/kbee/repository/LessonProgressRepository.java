@@ -17,9 +17,6 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     Optional<LessonProgress> findByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
 
 
-    boolean existsByUser_UserIdAndLesson_LessonIdAndStatus(String userId, String lessonId, ProgressStatus status);
-
-
     @Query("SELECT lp FROM LessonProgress lp " +
             "WHERE lp.user.userId = :userId " +
             "AND lp.lesson.unit.course.courseId = :courseId")
@@ -28,15 +25,21 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
             @Param("courseId") String courseId
     );
 
-    @Query("SELECT COUNT(lp) FROM LessonProgress lp " +
-            "WHERE lp.user.userId = :userId " +
-            "AND lp.lesson.unit.course.courseId = :courseId " +
-            "AND lp.status = :status")
-    long countByUserIdAndCourseIdAndStatus(
-            @Param("userId") String userId,
-            @Param("courseId") String courseId,
-            @Param("status") ProgressStatus status
-    );
+    @Query("SELECT l.unit.course.courseId, COUNT(ul.id) " +
+            "FROM LessonProgress ul JOIN ul.lesson l " +
+            "WHERE ul.user.userId = :userId AND ul.status = edu.language.kbee.enums.ProgressStatus.COMPLETED " +
+            "AND l.unit.course.courseId IN :courseIds " +
+            "AND l.status = edu.language.kbee.enums.LessonStatus.PUBLISHED " +
+            "GROUP BY l.unit.course.courseId")
+    List<Object[]> countCompletedLessonsByUserAndCourseIds(@Param("userId") String userId, @Param("courseIds") List<String> courseIds);
 
-    List<LessonProgress> findByUser_UserIdOrderByLastModifiedDateDesc(String userId);
+    @Query("SELECT l.unit.course.courseId, COUNT(ul.id) " +
+            "FROM LessonProgress ul JOIN ul.lesson l " +
+            "WHERE ul.user.userId = :userId AND ul.status = edu.language.kbee.enums.ProgressStatus.COMPLETED " +
+            "AND l.unit.course.courseId = :courseId " +
+            "AND l.status = edu.language.kbee.enums.LessonStatus.PUBLISHED " +
+            "GROUP BY l.unit.course.courseId")
+    List<Object[]> countCompletedLessonsByUserAndCourseId(@Param("userId") String userId, @Param("courseId") String courseId);
+
+    boolean existsByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
 }

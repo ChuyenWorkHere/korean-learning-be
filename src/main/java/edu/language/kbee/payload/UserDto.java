@@ -4,13 +4,14 @@ import edu.language.kbee.enums.GenderName;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter@Setter
 @NoArgsConstructor@AllArgsConstructor
 @Builder
 public class UserDto {
 
-    private Long userId;
+    private String userId;
 
     private String username;
 
@@ -26,4 +27,9 @@ public class UserDto {
 
     private String userAvatar;
 
+    private int currentStreak;
+
+    private boolean premium;
+
+    private List<String> roles;
 }

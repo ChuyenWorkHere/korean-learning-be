@@ -15,7 +15,7 @@ public class BadRequestException extends RuntimeException {
 
   public BadRequestException(String message) {
     super(message);
-    this.status = HttpStatus.NOT_FOUND;
+    this.status = HttpStatus.BAD_REQUEST;
     this.message = message;
   }
 
@@ -27,7 +27,7 @@ public class BadRequestException extends RuntimeException {
 
   public BadRequestException(String message, String[] params) {
     super(message);
-    this.status = HttpStatus.NOT_FOUND;
+    this.status = HttpStatus.BAD_REQUEST;
     this.message = message;
     this.params = params;
   }

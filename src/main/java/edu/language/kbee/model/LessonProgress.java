@@ -37,4 +37,7 @@ public class LessonProgress extends DateAuditing {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "score")
+    private Integer score;
 }

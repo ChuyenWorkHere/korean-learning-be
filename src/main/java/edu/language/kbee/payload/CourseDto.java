@@ -21,4 +21,8 @@ public class CourseDto {
 
     private String status;
 
+    private Integer totalUnits;
+    private Integer totalLessons;
+    private Integer totalEnrollment;
+
 }

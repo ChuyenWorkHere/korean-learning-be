@@ -14,8 +14,8 @@ import lombok.NoArgsConstructor;
 public class SignUpRequest {
 
     @NotBlank
-    @Size(min = 5, max = 30, message = "Username must be between 5 and 30 characters")
-    private String username;
+    @Size(min = 5, max = 30, message = "Full name must be between 5 and 30 characters")
+    private String fullName;
 
     @Size(min = 6, message = "Password must have at least 6 characters")
     private String password;

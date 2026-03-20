@@ -31,8 +31,6 @@ public class LessonController {
     }
 
 
-
-
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/lessons")
     public ResponseEntity<LessonDto> createLesson(@Valid @RequestBody LessonDto lessonDto) {

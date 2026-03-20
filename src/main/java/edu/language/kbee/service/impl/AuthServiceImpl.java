@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -82,14 +83,15 @@ public class AuthServiceImpl implements AuthService {
         if(userRepository.existsByEmail(signUpRequest.getEmail())){
             throw new BadRequestException("Email đã tồn tại");
         }
-        if(userRepository.existsByUsername(signUpRequest.getUsername())){
+        if(userRepository.existsByUsername(signUpRequest.getEmail())){
             throw new BadRequestException("Username đã tồn tại");
         }
 
         User user = User.builder()
-                .username(signUpRequest.getUsername())
+                .username(signUpRequest.getEmail())
                 .email(signUpRequest.getEmail())
                 .password(passwordEncoder.encode(signUpRequest.getPassword()))
+                .fullName(signUpRequest.getFullName())
                 .build();
 
         Role role = roleRepository.findByRoleName(RoleName.USER)
@@ -109,8 +111,12 @@ public class AuthServiceImpl implements AuthService {
 
         User loggedInUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
+        Set<Role> roleSet = loggedInUser.getRoles();
+        List<String> roleName = roleSet.stream().map( r -> String.valueOf(r.getRoleName())).toList();
 
         UserDto userDto = mapper.map(loggedInUser, UserDto.class);
+        userDto.setRoles(roleName);
+
 
         return userDto;
     }

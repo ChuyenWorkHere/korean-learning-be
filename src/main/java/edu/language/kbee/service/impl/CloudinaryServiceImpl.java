@@ -17,10 +17,40 @@ public class CloudinaryServiceImpl implements CloudinaryService {
     private final Cloudinary cloudinary;
 
     @Override
-    public String uploadFile(MultipartFile file) throws IOException {
-        Map uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap("resource_type", "auto", "folder", "kbee_audio_files"));
+    public String uploadAudio(MultipartFile file) throws IOException {
+        try {
+            Map params = ObjectUtils.asMap(
+                    "folder", "kbee_audio_files",
+                    "resource_type", "auto"
+            );
 
-        return uploadResult.get("secure_url").toString();
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+
+            return uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            throw new IOException("Lỗi khi upload lên Cloudinary: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String uploadImage(MultipartFile file) throws IOException {
+        try {
+            Map params = ObjectUtils.asMap(
+                    "folder", "kbee_image_files",
+                    "resource_type", "auto",
+                    "timestamp", System.currentTimeMillis()
+            );
+
+            Map uploadResult = cloudinary.uploader().upload(file.getBytes(), params);
+
+            return uploadResult.get("secure_url").toString();
+        } catch (Exception e) {
+            throw new IOException("Lỗi khi upload lên Cloudinary: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteFile(String publicId) throws IOException {
+        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
     }
 }
