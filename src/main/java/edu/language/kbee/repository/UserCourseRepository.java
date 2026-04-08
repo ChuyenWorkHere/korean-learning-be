@@ -7,11 +7,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface UserCourseRepository extends JpaRepository<UserCourse, String> {
     List<UserCourse> findByUser_UserId(String userId);
     UserCourse findByUser_UserIdAndCourse_CourseId(String userId, String courseId);
+
+    Optional<UserCourse> findFirstByUser_UserIdOrderByLastModifiedDateDesc(String userId);
 
     @Query("SELECT uc.course.courseId, COUNT(uc.id) " +
             "FROM UserCourse uc " +

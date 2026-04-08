@@ -47,10 +47,28 @@ public class SubmissionServiceImpl implements SubmissionService {
         JsonNode feedbackNode = null;
         int score = 0;
 
+        String blockContext = "";
+        try {
+            JsonNode blocks = objectMapper.readTree(lesson.getContent());
+            for (JsonNode block : blocks) {
+                if (block.path("id").asText().equals(request.getBlockId())) {
+                    if (request.getSubmissionType().name().equals("ESSAY")) {
+                         blockContext = "Essay Title/Topic: " + block.path("title").asText() + "\nInstructions: " + block.path("instructions").asText();
+                    } else if (request.getSubmissionType().name().equals("TRANSLATION")) {
+                         blockContext = "Translate this phrase: " + block.path("korean").asText() + " or " + block.path("english").asText();
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // ignore JSON parse error
+        }
+
         try {
             feedbackNode = geminiAiService.gradeWritingSubmission(
                     request.getSubmittedContent(),
-                    request.getSubmissionType().name()
+                    request.getSubmissionType().name(),
+                    blockContext
             );
 
             if (feedbackNode != null && feedbackNode.has("score")) {
@@ -102,7 +120,7 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         return SubmissionResponse.builder()
                 .id(submission.getId())
-                .lessonId(submission.getLesson().getLessonId())
+                .lessonId(lessonId)
                 .blockId(submission.getBlockId())
                 .submissionType(submission.getSubmissionType())
                 .submittedContent(submission.getSubmittedContent())

@@ -25,4 +25,10 @@ public class ProgressController {
         return ResponseEntity.ok(nextLessonData);
     }
 
+    @GetMapping("/progress/lessons/count")
+    public ResponseEntity<Map<String, Long>> getCompletedLessonsCount() {
+        Long count = lessonService.countCompletedLessons();
+        return ResponseEntity.ok(Map.of("count", count));
+    }
+
 }

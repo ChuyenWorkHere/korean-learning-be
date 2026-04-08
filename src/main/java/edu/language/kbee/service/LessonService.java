@@ -18,4 +18,5 @@ public interface LessonService {
     LessonDto toggleLessonStatus(String lessonId);
 
     Map<String, String> completeLessonByUser(String lessonId, LessonCompletionRequest request);
+    Long countCompletedLessons();
 }

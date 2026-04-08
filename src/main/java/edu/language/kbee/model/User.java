@@ -48,6 +48,10 @@ public class User extends DateAuditing {
     private LocalDate lastActivityDate;
 
     @Builder.Default
+    private byte isPremium = 0;
+
+    private LocalDate premiumExpiryDate;
+    @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
             joinColumns = @JoinColumn(name = "user_id"),

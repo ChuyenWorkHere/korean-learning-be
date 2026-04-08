@@ -61,13 +61,17 @@ public class GeminiAiServiceImpl implements GeminiAiService {
     }
 
     @Override
-    public JsonNode gradeWritingSubmission(String studentContent, String taskType) throws Exception {
+    public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
         String url = baseUrl + apiKey;
 
         // Xây dựng ngữ cảnh chấm điểm (Dịch câu hay Viết luận)
         String context = taskType.equalsIgnoreCase("ESSAY")
-                ? "Evaluate this based on TOPIK II Essay criteria (formal endings like -는다/다, logical flow, advanced vocabulary, spacing)."
-                : "Evaluate this based on standard translation accuracy, natural phrasing, and polite conversational forms (-아요/어요 or -습니다/ㅂ니다).";
+                ? "Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết (sử dụng đuôi câu trang trọng -는다/다, mạch văn logic, từ vựng cao cấp, cách giãn cách từ chính xác)."
+                : "Đánh giá dựa trên tiêu chuẩn dịch thuật chính xác, cách diễn đạt tự nhiên và sử dụng đúng văn phong lịch sự (-아요/어요 hoặc -습니다/ㅂ니다).";
+
+        if (blockContext != null && !blockContext.isBlank()) {
+             context += "\n\nYêu cầu của đề bài mà học sinh BẮT BUỘC phải tuân thủ:\n" + blockContext;
+        }
 
         Map<String, Object> textPart = getStringObjectMap(studentContent, context);
 
@@ -96,30 +100,37 @@ public class GeminiAiServiceImpl implements GeminiAiService {
 
     private static Map<String, Object> getStringObjectMap(String studentContent, String context) {
         String systemPrompt = """
-            You are a professional Korean language teacher. 
-            Analyze the student's submission carefully. %s
+            Bạn là một giáo viên dạy tiếng Hàn chuyên nghiệp. 
+            Hãy phân tích bài làm của học sinh một cách cẩn thận. %s
             
-            Student's submission: "%s"
+            QUY TẮC CHẤM ĐIỂM NGHIÊM NGẶT:
+            - Chấm điểm khắt khe! Những bài viết ở mức trung bình và có lỗi chỉ nên đạt từ 50-70 điểm.
+            - Chỉ cho mức 90-100 điểm với bài viết xuất sắc, trôi chảy như người bản xứ, ngữ pháp hoàn hảo và trả lời đúng trọng tâm.
+            - Nếu bài làm của học sinh chỉ đơn thuần sao chép lại đề bài/yêu cầu mà không tự trả lời, vô nghĩa, hoặc hoàn toàn lạc đề, BẠN BẮT BUỘC PHẢI CHẤM 0 ĐIỂM.
             
-            You MUST return the output strictly in the following JSON format WITHOUT ANY markdown wrappers (like ```json) or additional text.
+            Bài làm của học sinh: "%s"
+            
+            BẠN BẮT BUỘC PHẢI TRẢ VỀ ĐẦU RA BẰNG ĐỊNH DẠNG JSON NHƯ THEO YÊU CẦU DƯỚI ĐÂY. 
+            TOÀN BỘ NỘI DUNG VĂN BẢN (DỊCH NGHĨA, NHẬN XÉT, GIẢI THÍCH, LỜI KHUYÊN) PHẢI ĐƯỢC VIẾT BẰNG TIẾNG VIỆT (Ngoại trừ trường 'type', 'severity', và đoạn văn bản trích dẫn tiếng Hàn). 
+            KHÔNG DÙNG thẻ markdown (như ```json) hay giải thích gì thêm ở ngoài chuỗi JSON.
             
             {
-              "original": "exact student text",
-              "userMeaning": "English translation of what the student wrote",
-              "corrected": "Grammatically correct and natural Korean version",
-              "aiMeaning": "English translation of the corrected version",
-              "score": integer from 0 to 100,
-              "performanceText": "Short encouraging phrase (e.g., 'Great Attempt!', 'Needs Work')",
-              "nativeNuance": "A short explanation of how native Koreans would phrase this naturally",
-              "analysis": "A brief overall comment on their writing",
+              "original": "Văn bản gốc tiếng Hàn của học sinh (Giữ nguyên tiếng Hàn)",
+              "userMeaning": "Dịch ý nghĩa chính xác từ văn bản gốc của học sinh sang tiếng Việt",
+              "corrected": "Phiên bản tiếng Hàn đã được sửa lỗi ngữ pháp và diễn đạt tự nhiên hơn (Giữ nguyên tiếng Hàn)",
+              "aiMeaning": "Bản dịch nghĩa nội dung đã sửa sang tiếng Việt",
+              "score": Điểm số (số nguyên từ 0 đến 100),
+              "performanceText": "Câu khích lệ ngắn gọn bằng Tiếng Việt (Ví dụ: 'Cố gắng lên!', 'Làm tốt lắm!')",
+              "nativeNuance": "Giải thích ngắn gọn cách người Hàn bản xứ diễn đạt tự ngữ này tự nhiên hơn ra sao (Bằng Tiếng Việt)",
+              "analysis": "Nhận xét tổng quan ngắn gọn về bài trình bày (Bằng Tiếng Việt)",
               "breakdowns": [
                  {
                    "type": "politeness|grammar|vocabulary", 
-                   "title": "Short title (e.g., 'Missing Particles')",
+                   "title": "Tiêu đề ngắn gọn về lỗi (Bằng Tiếng Việt, vd: 'Thiếu tiểu từ', 'Sai ngữ pháp')",
                    "severity": "Critical Error|Correction Needed|Minor Suggestion",
-                   "description": "Detailed explanation of the mistake",
-                   "tip": "A small tip for future practice",
-                   "tags": ["Wrong: xyz", "Right: abc"] 
+                   "description": "Giải thích chi tiết nguyên nhân lỗi và cách sửa chuẩn (Bằng Tiếng Việt)",
+                   "tip": "Mẹo nhỏ để luyện tập hoặc phân biệt (Bằng Tiếng Việt)",
+                   "tags": ["Sai: xyz", "Đúng: abc"] 
                  }
               ]
             }

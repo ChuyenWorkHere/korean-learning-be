@@ -3,6 +3,7 @@ package edu.language.kbee.repository;
 import edu.language.kbee.enums.RoleName;
 import edu.language.kbee.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,4 +19,9 @@ public interface UserRepository extends JpaRepository<User, String> {
     boolean existsByUsername(String username);
 
     List<User> findAllByRoles_RoleNameEquals(RoleName roleName);
+
+    List<User> findTop10ByRoles_RoleNameEqualsOrderByCurrentStreakDesc(RoleName roleName);
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.isPremium = 1")
+    long countPremiumUsers();
 }

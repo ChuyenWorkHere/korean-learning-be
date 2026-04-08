@@ -29,7 +29,9 @@ public class UserDto {
 
     private int currentStreak;
 
-    private boolean premium;
+    private byte isPremium;
+
+    private LocalDate premiumExpiryDate;
 
     private List<String> roles;
 }

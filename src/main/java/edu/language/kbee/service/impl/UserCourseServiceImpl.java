@@ -3,6 +3,7 @@ package edu.language.kbee.service.impl;
 import edu.language.kbee.enums.CourseStatus;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.model.Course;
+import edu.language.kbee.model.LessonProgress;
 import edu.language.kbee.model.User;
 import edu.language.kbee.model.UserCourse;
 import edu.language.kbee.payload.UserCourseDto;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -143,6 +145,28 @@ public class UserCourseServiceImpl implements UserCourseService {
             dto.setIsLocked(false);
             return dto;
         }
+    }
+
+    @Override
+    public UserCourseDto getRecentCourse(String userId) {
+        // Find most recent lesson interaction
+        java.util.Optional<LessonProgress> latestProgress = progressRepository.findFirstByUser_UserIdOrderByLastModifiedDateDesc(userId);
+        
+        String recentCourseId = null;
+        if (latestProgress.isPresent()) {
+            recentCourseId = latestProgress.get().getLesson().getUnit().getCourse().getCourseId();
+        } else {
+            // Fallback to most recent enrolled course
+            java.util.Optional<UserCourse> latestEnrollment = userCourseRepository.findFirstByUser_UserIdOrderByLastModifiedDateDesc(userId);
+            if (latestEnrollment.isPresent()) {
+                recentCourseId = latestEnrollment.get().getCourse().getCourseId();
+            }
+        }
+
+        if (recentCourseId != null) {
+            return getMyCourseDetail(recentCourseId);
+        }
+        return null;
     }
 
     private UserCourseDto mapToDto(UserCourse userCourse) {

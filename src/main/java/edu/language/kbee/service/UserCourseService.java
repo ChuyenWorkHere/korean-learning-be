@@ -9,4 +9,6 @@ public interface UserCourseService {
     List<UserCourseDto> getUserCourses(String userId);
 
     UserCourseDto getMyCourseDetail(String courseId);
+
+    UserCourseDto getRecentCourse(String userId);
 }
