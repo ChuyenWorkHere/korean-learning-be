@@ -52,6 +52,13 @@ public class CourseController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{courseId}")
+    public ResponseEntity<?> updateCourse(@PathVariable(name = "courseId") String courseId, @RequestBody CourseDto courseDto) {
+        CourseDto updatedCourse = courseService.updateCourse(courseId, courseDto);
+        return ResponseEntity.ok(updatedCourse);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{courseId}/status")
     public ResponseEntity<?> updateCourseStatus(@PathVariable(name = "courseId") String courseId) {
         CourseDto updatedCourse = courseService.toggleCourseStatus(courseId);
@@ -63,6 +70,17 @@ public class CourseController {
 
         UserCourseDto userCourseDto = userCourseService.getMyCourseDetail(courseId);
         return ResponseEntity.ok(userCourseDto);
+    }
+
+    @GetMapping("/my-courses/recent")
+    public ResponseEntity<?> getRecentCourse() {
+        User user = authUtil.getLoggedInUser();
+        UserCourseDto recentCourse = userCourseService.getRecentCourse(user.getUserId());
+        if (recentCourse != null) {
+            return ResponseEntity.ok(recentCourse);
+        } else {
+            return ResponseEntity.noContent().build();
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")

@@ -70,7 +70,27 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseDto updateCourse(String courseId, CourseDto courseDto) {
-        return null;
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (courseDto.getTitle() != null) {
+            course.setTitle(courseDto.getTitle());
+        }
+        if (courseDto.getDescription() != null) {
+            course.setDescription(courseDto.getDescription());
+        }
+        if (courseDto.getIconName() != null) {
+            course.setIconName(courseDto.getIconName());
+        }
+        if (courseDto.getLevel() != null) {
+            course.setLevel(edu.language.kbee.enums.CourseLevel.valueOf(courseDto.getLevel()));
+        }
+        if (courseDto.getStatus() != null) {
+            course.setStatus(edu.language.kbee.enums.CourseStatus.valueOf(courseDto.getStatus()));
+        }
+
+        Course updatedCourse = courseRepository.save(course);
+        return modelMapper.map(updatedCourse, CourseDto.class);
     }
 
     @Override

@@ -11,7 +11,7 @@ import edu.language.kbee.repository.FlashcardDeckRepository;
 import edu.language.kbee.repository.FlashcardProgressRepository;
 import edu.language.kbee.repository.FlashcardRepository;
 import edu.language.kbee.service.StudyService;
-import edu.language.kbee.service.UserService;
+import edu.language.kbee.service.UserActivityService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -33,7 +33,7 @@ public class StudyServiceImpl implements StudyService {
     private final FlashcardProgressRepository progressRepository;
     private final AuthUtil authUtil;
     private final ModelMapper mapper;
-    private final UserService userService;
+    private final UserActivityService userActivityService;
 
     @Override
     @Transactional
@@ -49,7 +49,7 @@ public class StudyServiceImpl implements StudyService {
         List<FlashcardProgress> dueProgresses = progressRepository.findDueCardsForUserAndDeck(user, deck, LocalDateTime.now());
         List<String> dueCardIds = dueProgresses.stream()
                 .map(p -> p.getFlashcard().getCardId())
-                .collect(Collectors.toList());
+                .toList();
 
         // 3. Find completely new cards (cards without any progress record)
         List<Flashcard> newCards = new ArrayList<>();
@@ -138,6 +138,6 @@ public class StudyServiceImpl implements StudyService {
         }
 
         progressRepository.save(progress);
-        userService.updateUserStreak(user.getUserId());
+        userActivityService.recordActivity(user.getUserId());
     }
 }

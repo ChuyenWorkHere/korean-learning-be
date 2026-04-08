@@ -30,4 +30,10 @@ public class UserController {
         UserDto updatedUser = userService.updateProfile(request);
         return ResponseEntity.ok(updatedUser);
     }
+    @PutMapping("/users/{userId}/lock")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDto> toggleUserLock(@PathVariable String userId, @RequestParam boolean locked) {
+        UserDto updatedUser = userService.toggleUserLock(userId, locked);
+        return ResponseEntity.ok(updatedUser);
+    }
 }

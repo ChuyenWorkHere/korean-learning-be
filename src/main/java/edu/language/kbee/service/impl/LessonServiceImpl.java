@@ -14,7 +14,7 @@ import edu.language.kbee.repository.LessonProgressRepository;
 import edu.language.kbee.repository.LessonRepository;
 import edu.language.kbee.repository.UnitRepository;
 import edu.language.kbee.service.LessonService;
-import edu.language.kbee.service.UserService;
+import edu.language.kbee.service.UserActivityService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -38,7 +38,7 @@ public class LessonServiceImpl implements LessonService {
     private final UnitRepository unitRepository;
     private final ModelMapper modelMapper;
     private final AuthUtil authUtil;
-    private final UserService userService;
+    private final UserActivityService userActivityService;
 
     @Override
     @Transactional
@@ -236,13 +236,19 @@ public class LessonServiceImpl implements LessonService {
             }
         }
 
-        userService.updateUserStreak(user.getUserId());
+        userActivityService.recordActivity(user.getUserId());
 
         return Map.of(
             "courseId", courseId,
             "nextLessonId", nextLessonId,
             "message", "Lesson progress tracked successfully"
         );
+    }
+
+    @Override
+    public Long countCompletedLessons() {
+        User user = authUtil.getLoggedInUser();
+        return progressRepository.countAllCompletedLessonsByUserId(user.getUserId());
     }
 
     private LessonDto mapToDto(Lesson lesson) {

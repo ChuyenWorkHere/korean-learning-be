@@ -14,8 +14,11 @@ import java.util.Optional;
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
 
+    Optional<LessonProgress> findFirstByUser_UserIdOrderByLastModifiedDateDesc(String userId);
+
     Optional<LessonProgress> findByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
 
+    List<LessonProgress> findByUser_UserIdAndStatusOrderByCompletedAtDesc(String userId, ProgressStatus status);
 
     @Query("SELECT lp FROM LessonProgress lp " +
             "WHERE lp.user.userId = :userId " +
@@ -42,4 +45,10 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
     List<Object[]> countCompletedLessonsByUserAndCourseId(@Param("userId") String userId, @Param("courseId") String courseId);
 
     boolean existsByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
+
+    @Query("SELECT COUNT(lp.id) FROM LessonProgress lp WHERE lp.user.userId = :userId AND lp.status = edu.language.kbee.enums.ProgressStatus.COMPLETED")
+    Long countAllCompletedLessonsByUserId(@Param("userId") String userId);
+
+    @Query("SELECT COUNT(lp) FROM LessonProgress lp WHERE lp.status = edu.language.kbee.enums.ProgressStatus.COMPLETED")
+    long countAllCompletedLessons();
 }

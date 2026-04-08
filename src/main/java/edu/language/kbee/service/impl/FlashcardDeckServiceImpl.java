@@ -44,8 +44,6 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     @Override
     public List<FlashcardDeckDto> getPublicDecks() {
-        // Technically public decks might not have a progress for the CURRENT user unless they studied it.
-        // We can still try to resolve it if they are logged in.
         User user = null;
         try {
             user = authUtil.getLoggedInUser();
@@ -104,7 +102,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
             // Ignore if no user is logged in
         }
         boolean isAdmin = user != null && user.getRoles().stream().anyMatch(role -> role.getRoleName().equals(RoleName.ADMIN));
-        if(user != null  && deck.getUser().getUserId().equals(user.getUserId()) || !isAdmin) {
+        if(user != null  && !deck.getUser().getUserId().equals(user.getUserId()) || !isAdmin) {
             throw new UnauthorizedException("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
 

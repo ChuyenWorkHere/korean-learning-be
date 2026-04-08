@@ -116,7 +116,8 @@ public class AuthServiceImpl implements AuthService {
 
         UserDto userDto = mapper.map(loggedInUser, UserDto.class);
         userDto.setRoles(roleName);
-
+        userDto.setIsPremium(loggedInUser.getIsPremium());
+        userDto.setPremiumExpiryDate(loggedInUser.getPremiumExpiryDate());
 
         return userDto;
     }
