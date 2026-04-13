@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import edu.language.kbee.enums.LessonStatus;
+
 
 import java.util.List;
 
@@ -38,13 +40,13 @@ public interface LessonRepository extends JpaRepository<Lesson, String> {
 
     @Query("SELECT l.unit.course.courseId, COUNT(l.lessonId) " +
             "FROM Lesson l WHERE l.unit.course.courseId IN :courseIds " +
-            "AND l.status = edu.language.kbee.enums.LessonStatus.PUBLISHED " +
+            "AND l.status = LessonStatus.PUBLISHED " +
             "GROUP BY l.unit.course.courseId")
     List<Object[]> countTotalPublishedLessonsByCourseIds(@Param("courseIds") List<String> courseIds);
 
     @Query("SELECT l.unit.course.courseId, COUNT(l.lessonId) " +
             "FROM Lesson l WHERE l.unit.course.courseId = :courseId " +
-            "AND l.status = edu.language.kbee.enums.LessonStatus.PUBLISHED " +
+            "AND l.status = LessonStatus.PUBLISHED " +
             "GROUP BY l.unit.course.courseId")
     List<Object[]> countTotalPublishedLessonsByCourseId(@Param("courseId") String courseId);
 }

@@ -1,4 +1,4 @@
-package edu.language.kbee.dto.payment;
+package edu.language.kbee.payload;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaymentResDTO {
+public class PaymentResDto {
     private String status;
     private String message;
     private String url;

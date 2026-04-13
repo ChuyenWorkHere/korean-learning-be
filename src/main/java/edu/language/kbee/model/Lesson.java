@@ -64,4 +64,8 @@ public class Lesson extends DateAuditing {
     @Builder.Default
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonProgress> studentProgresses = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<StudentSubmission> studentSubmission = new ArrayList<>();
 }

@@ -1,6 +1,6 @@
 package edu.language.kbee.service;
 
-import edu.language.kbee.dto.admin.DashboardStatsDTO;
+import edu.language.kbee.payload.DashboardStatsDTO;
 
 public interface AdminDashboardService {
     DashboardStatsDTO getDashboardStats();

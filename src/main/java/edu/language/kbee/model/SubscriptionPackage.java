@@ -1,4 +1,4 @@
-package edu.language.kbee.entity;
+package edu.language.kbee.model;
 
 import jakarta.persistence.*;
 import lombok.*;

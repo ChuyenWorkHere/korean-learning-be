@@ -12,6 +12,7 @@ import edu.language.kbee.service.UserActivityService;
 import edu.language.kbee.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -107,8 +108,15 @@ public class UserActivityServiceImpl implements UserActivityService {
 
     @Override
     public List<UserDto> getStreakLeaderboard() {
-        List<User> topUsers = userRepository.findTop10ByRoles_RoleNameEqualsOrderByCurrentStreakDesc(RoleName.USER);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        List<User> topUsers = userRepository.findTopUsersByRealStreak(RoleName.USER, yesterday, PageRequest.of(0, 10));
         
-        return topUsers.stream().map(u -> modelMapper.map(u, UserDto.class)).collect(Collectors.toList());
+        return topUsers.stream().map(u -> {
+            UserDto dto = modelMapper.map(u, UserDto.class);
+            if (u.getLastActivityDate() == null || u.getLastActivityDate().isBefore(yesterday)) {
+                dto.setCurrentStreak(0);
+            }
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

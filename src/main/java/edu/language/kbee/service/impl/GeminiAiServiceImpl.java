@@ -2,6 +2,8 @@ package edu.language.kbee.service.impl;
 
 import edu.language.kbee.service.GeminiAiService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,9 +24,11 @@ public class GeminiAiServiceImpl implements GeminiAiService {
     @Value("${gemini.api-key}")
     private String apiKey;
 
+    public static Logger logger = LoggerFactory.getLogger(GeminiAiServiceImpl.class);
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+    private final String baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=";
 
     @Override
     public JsonNode generateWritingPrompt(String topic) throws Exception {
@@ -96,6 +100,66 @@ public class GeminiAiServiceImpl implements GeminiAiService {
         aiResponseText = cleanAiResponse(aiResponseText);
 
         return objectMapper.readTree(aiResponseText);
+    }
+
+    @Override
+    public JsonNode generateQuizzes(String context, String skillType) {
+        String url = baseUrl + apiKey;
+
+        String promptContext = "";
+        switch (skillType.toLowerCase()) {
+            case "grammar":
+                promptContext = "phần lý thuyết ngữ pháp sau: " + context;
+                break;
+            case "listening":
+                promptContext = "transcript của bài nghe sau: " + context;
+                break;
+            case "reading":
+                promptContext = "đoạn văn bản sau: " + context;
+                break;
+            default:
+                promptContext = "nội dung sau: " + context;
+        }
+
+        String systemPrompt = "Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa vào " + promptContext + ", " +
+                "hãy tạo chính xác 3 câu hỏi trắc nghiệm tiếng Hàn/tiếng Việt." +
+                "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG 3 OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
+                "{\n" +
+                "  \"question\": \"Nội dung câu hỏi?\",\n" +
+                "  \"explanation\": \"Giải thích ngắn gọn lý do chọn đáp án đúng bằng tiếng Việt.\",\n" +
+                "  \"options\": [\n" +
+                "    { \"text\": \"Lựa chọn 1\", \"isCorrect\": true },\n" +
+                "    { \"text\": \"Lựa chọn 2\", \"isCorrect\": false },\n" +
+                "    { \"text\": \"Lựa chọn 3\", \"isCorrect\": false },\n" +
+                "    { \"text\": \"Lựa chọn 4\", \"isCorrect\": false }\n" +
+                "  ]\n" +
+                "}\n" +
+                "Hãy trộn ngẫu nhiên vị trí đáp án đúng (không phải lúc nào cũng ở vị trí đầu tiên).";
+
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", systemPrompt);
+
+        Map<String, Object> parts = new HashMap<>();
+        parts.put("parts", List.of(textPart));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(parts));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        try {
+            String response = restTemplate.postForObject(url, request, String.class);
+            JsonNode rootNode = objectMapper.readTree(response);
+            String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+            aiResponseText = cleanAiResponse(aiResponseText);
+            return objectMapper.readTree(aiResponseText);
+        } catch (Exception e) {
+            logger.error("Error: {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
     private static Map<String, Object> getStringObjectMap(String studentContent, String context) {

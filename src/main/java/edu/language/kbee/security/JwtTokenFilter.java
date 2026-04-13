@@ -96,6 +96,7 @@ public class JwtTokenFilter extends OncePerRequestFilter {
         final List<Pair<String, String>> bypassToken = Arrays.asList(
                 Pair.of("/api/v1/auth/login", "POST"),
                 Pair.of("/api/v1/auth/signup", "POST"),
+                Pair.of("/api/v1/auth/google", "POST"),
                 Pair.of("/api/v1/public", "GET"));
 
         final List<String> staticResourcePrefixes = Arrays.asList(

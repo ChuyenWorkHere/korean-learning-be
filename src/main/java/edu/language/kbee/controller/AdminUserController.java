@@ -1,9 +1,9 @@
 package edu.language.kbee.controller;
 
-import edu.language.kbee.dto.admin.AdminUserBillingDto;
-import edu.language.kbee.dto.admin.AdminUserDetailsDto;
-import edu.language.kbee.dto.admin.AdminUserProgressDto;
-import edu.language.kbee.dto.admin.AdminUserSubmissionDto;
+import edu.language.kbee.payload.AdminUserBillingDto;
+import edu.language.kbee.payload.AdminUserDetailsDto;
+import edu.language.kbee.payload.AdminUserProgressDto;
+import edu.language.kbee.payload.AdminUserSubmissionDto;
 import edu.language.kbee.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

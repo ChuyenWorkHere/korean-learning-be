@@ -25,4 +25,24 @@ public class AiController {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/generate-quizzes")
+    public ResponseEntity<?> generateQuizzes(@RequestBody Map<String, String> payload) {
+        try {
+            String context = payload.get("context");
+            String skillType = payload.get("skillType");
+            
+            if (context == null || context.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Context is required"));
+            }
+            if (skillType == null || skillType.trim().isEmpty()) {
+                skillType = "general";
+            }
+            
+            return ResponseEntity.ok(geminiAiService.generateQuizzes(context, skillType));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

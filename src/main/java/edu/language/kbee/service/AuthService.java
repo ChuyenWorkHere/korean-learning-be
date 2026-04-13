@@ -12,4 +12,6 @@ public interface AuthService {
     String signup(SignUpRequest signUpRequest);
 
     UserDto getLoggedInUser();
+
+    LoginResponse loginWithGoogle(String idTokenString) throws Exception;
 }

@@ -1,4 +1,4 @@
-package edu.language.kbee.dto.admin;
+package edu.language.kbee.payload;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

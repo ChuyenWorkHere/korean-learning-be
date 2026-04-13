@@ -2,7 +2,7 @@ package edu.language.kbee.service.impl;
 
 import edu.language.kbee.payload.request.SubscriptionPackageRequest;
 import edu.language.kbee.payload.response.SubscriptionPackageResponse;
-import edu.language.kbee.entity.SubscriptionPackage;
+import edu.language.kbee.model.SubscriptionPackage;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.repository.SubscriptionPackageRepository;
 import edu.language.kbee.service.SubscriptionPackageService;

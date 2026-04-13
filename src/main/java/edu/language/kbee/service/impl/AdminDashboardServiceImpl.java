@@ -1,8 +1,8 @@
 package edu.language.kbee.service.impl;
 
-import edu.language.kbee.dto.admin.DashboardStatsDTO;
-import edu.language.kbee.entity.PaymentTransaction;
-import edu.language.kbee.entity.SubscriptionPackage;
+import edu.language.kbee.payload.DashboardStatsDTO;
+import edu.language.kbee.model.PaymentTransaction;
+import edu.language.kbee.model.SubscriptionPackage;
 import edu.language.kbee.model.User;
 import edu.language.kbee.repository.LessonProgressRepository;
 import edu.language.kbee.repository.PaymentTransactionRepository;

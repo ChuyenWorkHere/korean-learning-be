@@ -1,6 +1,6 @@
 package edu.language.kbee.repository;
 
-import edu.language.kbee.entity.SubscriptionPackage;
+import edu.language.kbee.model.SubscriptionPackage;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

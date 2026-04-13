@@ -1,6 +1,6 @@
 package edu.language.kbee.controller;
 
-import edu.language.kbee.dto.payment.PaymentResDTO;
+import edu.language.kbee.payload.PaymentResDto;
 import edu.language.kbee.service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -19,17 +19,17 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping("/create_payment")
-    public ResponseEntity<PaymentResDTO> createPayment(
+    public ResponseEntity<PaymentResDto> createPayment(
             @RequestParam("packageId") Long packageId,
             HttpServletRequest request
     ) {
         try {
             String paymentUrl = paymentService.createPaymentUrl(packageId, request);
-            PaymentResDTO res = new PaymentResDTO("OK", "Successfully created payment url", paymentUrl);
+            PaymentResDto res = new PaymentResDto("OK", "Successfully created payment url", paymentUrl);
             return ResponseEntity.ok(res);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new PaymentResDTO("FAILED", e.getMessage(), null));
+                    .body(new PaymentResDto("FAILED", e.getMessage(), null));
         }
     }
 

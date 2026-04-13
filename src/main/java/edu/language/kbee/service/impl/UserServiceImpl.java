@@ -1,11 +1,11 @@
 package edu.language.kbee.service.impl;
 
-import edu.language.kbee.dto.admin.AdminUserBillingDto;
-import edu.language.kbee.dto.admin.AdminUserDetailsDto;
-import edu.language.kbee.dto.admin.AdminUserProgressDto;
-import edu.language.kbee.dto.admin.AdminUserSubmissionDto;
-import edu.language.kbee.entity.PaymentTransaction;
-import edu.language.kbee.entity.SubscriptionPackage;
+import edu.language.kbee.payload.AdminUserBillingDto;
+import edu.language.kbee.payload.AdminUserDetailsDto;
+import edu.language.kbee.payload.AdminUserProgressDto;
+import edu.language.kbee.payload.AdminUserSubmissionDto;
+import edu.language.kbee.model.PaymentTransaction;
+import edu.language.kbee.model.SubscriptionPackage;
 import edu.language.kbee.enums.ProgressStatus;
 import edu.language.kbee.enums.RoleName;
 import edu.language.kbee.exception.ResourceNotFoundException;

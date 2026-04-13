@@ -1,6 +1,6 @@
 package edu.language.kbee.controller;
 
-import edu.language.kbee.dto.admin.DashboardStatsDTO;
+import edu.language.kbee.payload.DashboardStatsDTO;
 import edu.language.kbee.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
