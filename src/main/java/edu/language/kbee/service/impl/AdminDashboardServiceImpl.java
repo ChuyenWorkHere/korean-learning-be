@@ -4,7 +4,7 @@ import edu.language.kbee.payload.DashboardStatsDTO;
 import edu.language.kbee.model.PaymentTransaction;
 import edu.language.kbee.model.SubscriptionPackage;
 import edu.language.kbee.model.User;
-import edu.language.kbee.repository.LessonProgressRepository;
+import edu.language.kbee.repository.CourseRepository;
 import edu.language.kbee.repository.PaymentTransactionRepository;
 import edu.language.kbee.repository.SubscriptionPackageRepository;
 import edu.language.kbee.repository.UserRepository;
@@ -29,14 +29,14 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private final UserRepository userRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
-    private final LessonProgressRepository lessonProgressRepository;
+    private final CourseRepository courseRepository;
     private final SubscriptionPackageRepository subscriptionPackageRepository;
 
     @Override
     public DashboardStatsDTO getDashboardStats() {
         long totalStudents = userRepository.count();
         long premiumSubscriptions = userRepository.countPremiumUsers();
-        long courseCompletions = lessonProgressRepository.countAllCompletedLessons();
+        long totalCourses = courseRepository.count();
         BigDecimal totalRevenue = paymentTransactionRepository.calculateTotalRevenue();
 
         // 1. Calculate Revenue Chart Data (This Year vs Last Year)
@@ -94,7 +94,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         return DashboardStatsDTO.builder()
                 .totalStudents(totalStudents)
                 .premiumSubscriptions(premiumSubscriptions)
-                .courseCompletions(courseCompletions)
+                .totalCourses(totalCourses)
                 .totalRevenue(totalRevenue)
                 .revenueThisYear(Arrays.asList(revenueThisYear))
                 .revenueLastYear(Arrays.asList(revenueLastYear))

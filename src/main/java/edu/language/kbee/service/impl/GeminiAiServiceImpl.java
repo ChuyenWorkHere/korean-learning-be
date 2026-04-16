@@ -1,6 +1,6 @@
 package edu.language.kbee.service.impl;
 
-import edu.language.kbee.service.GeminiAiService;
+import edu.language.kbee.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +19,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class GeminiAiServiceImpl implements GeminiAiService {
+public class GeminiAiServiceImpl implements AiService {
 
     @Value("${gemini.api-key}")
     private String apiKey;
@@ -29,6 +29,7 @@ public class GeminiAiServiceImpl implements GeminiAiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=";
+
 
     @Override
     public JsonNode generateWritingPrompt(String topic) throws Exception {

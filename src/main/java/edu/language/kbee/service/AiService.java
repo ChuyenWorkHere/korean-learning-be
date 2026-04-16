@@ -2,7 +2,7 @@ package edu.language.kbee.service;
 
 import tools.jackson.databind.JsonNode;
 
-public interface GeminiAiService {
+public interface AiService {
 
     JsonNode generateWritingPrompt(String topic) throws Exception;
 
