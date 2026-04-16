@@ -27,10 +27,10 @@ public class AuthController {
 
         ResponseCookie jwtCookie = ResponseCookie.from("accessToken", response.getToken())
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(24 * 60 * 60)
-                .sameSite("Strict")
+                .sameSite("None")
                 .build();
 
         response.setToken(null);
