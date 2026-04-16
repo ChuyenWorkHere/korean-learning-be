@@ -1,6 +1,6 @@
 package edu.language.kbee.controller;
 
-import edu.language.kbee.service.GeminiAiService;
+import edu.language.kbee.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,14 +13,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiController {
 
-    private final GeminiAiService geminiAiService;
+    private final AiService openRouterAi;
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/generate-writing")
     public ResponseEntity<?> generateWritingPrompt(@RequestBody Map<String, String> payload) {
         try {
             String topic = payload.getOrDefault("topic", "Korean Culture and Society");
-            return ResponseEntity.ok(geminiAiService.generateWritingPrompt(topic));
+            return ResponseEntity.ok(openRouterAi.generateWritingPrompt(topic));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -40,7 +40,7 @@ public class AiController {
                 skillType = "general";
             }
             
-            return ResponseEntity.ok(geminiAiService.generateQuizzes(context, skillType));
+            return ResponseEntity.ok(openRouterAi.generateQuizzes(context, skillType));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }

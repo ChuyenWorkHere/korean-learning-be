@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "subscription_packages")
@@ -38,5 +39,5 @@ public class SubscriptionPackage {
     @ElementCollection
     @CollectionTable(name = "subscription_features", joinColumns = @JoinColumn(name = "package_id"))
     @Column(name = "feature", nullable = false)
-    private List<String> features;
+    private Set<String> features;
 }

@@ -10,12 +10,10 @@ import edu.language.kbee.payload.request.SubmissionRequest;
 import edu.language.kbee.payload.response.SubmissionResponse;
 import edu.language.kbee.repository.LessonRepository;
 import edu.language.kbee.repository.SubmissionRepository;
-import edu.language.kbee.service.GeminiAiService;
+import edu.language.kbee.service.AiService;
 import edu.language.kbee.service.SubmissionService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.JsonNode;
@@ -26,7 +24,7 @@ import tools.jackson.databind.ObjectMapper;
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
-    private final GeminiAiService geminiAiService;
+    private final AiService geminiAiService;
     private final LessonRepository lessonRepository;
     private final ObjectMapper objectMapper;
     private final AuthUtil authUtil;

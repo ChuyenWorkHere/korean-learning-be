@@ -15,7 +15,7 @@ import java.util.List;
 public class DashboardStatsDTO {
     private long totalStudents;
     private long premiumSubscriptions;
-    private long courseCompletions;
+    private long totalCourses;
     private BigDecimal totalRevenue;
 
     // Chart data (Sample arrays for now based on user request)
