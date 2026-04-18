@@ -98,7 +98,7 @@ public class AuthController {
                 .body("Logged out successfully");
     }
 
-    @GetMapping("/api/v1/public/ping")
+    @GetMapping("/public/ping")
     public ResponseEntity<String> keepAwake() {
         return ResponseEntity.ok("K-Bee Backend is awake!");
     }
