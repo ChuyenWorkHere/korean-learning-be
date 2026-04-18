@@ -129,6 +129,12 @@ public class AuthServiceImpl implements AuthService {
         List<String> roleName = roleSet.stream().map( r -> String.valueOf(r.getRoleName())).toList();
 
         UserDto userDto = mapper.map(loggedInUser, UserDto.class);
+        
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        if (loggedInUser.getLastActivityDate() == null || loggedInUser.getLastActivityDate().isBefore(yesterday)) {
+            userDto.setCurrentStreak(0);
+        }
+
         userDto.setRoles(roleName);
         userDto.setIsPremium(loggedInUser.getIsPremium());
         userDto.setPremiumExpiryDate(loggedInUser.getPremiumExpiryDate());
