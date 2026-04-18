@@ -4,6 +4,7 @@ import edu.language.kbee.enums.GenderName;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter@Setter
@@ -26,6 +27,12 @@ public class UserDto {
     private LocalDate dateOfBirth;
 
     private String userAvatar;
+    
+    private String phoneNumber;
+    
+    private String address;
+
+    private LocalDateTime createdDate;
 
     private int currentStreak;
 

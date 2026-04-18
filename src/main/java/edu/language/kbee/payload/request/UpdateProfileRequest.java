@@ -19,4 +19,6 @@ public class UpdateProfileRequest {
     private GenderName genderName;
     private LocalDate dateOfBirth;
     private String userAvatar;
+    private String phoneNumber;
+    private String address;
 }

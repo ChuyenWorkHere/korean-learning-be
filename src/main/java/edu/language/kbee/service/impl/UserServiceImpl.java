@@ -65,6 +65,12 @@ public class UserServiceImpl implements UserService {
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
         }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
         if (request.getUserAvatar() != null && !request.getUserAvatar().isEmpty()) {
             if (user.getUserAvatar() != null && !user.getUserAvatar().equals(request.getUserAvatar())) {
                 try {
@@ -121,8 +127,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> findAllStudents() {
         List<User> students = userRepository.findAllByRoles_RoleNameEquals(RoleName.USER);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
         return students.stream().map(s -> {
             UserDto userDto = mapper.map(s, UserDto.class);
+            if (s.getLastActivityDate() == null || s.getLastActivityDate().isBefore(yesterday)) {
+                userDto.setCurrentStreak(0);
+            }
             userDto.setIsPremium(s.getIsPremium());
 
             return userDto;
@@ -146,6 +156,12 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng không tồn tại"));
 
+        int realStreak = user.getCurrentStreak();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        if (user.getLastActivityDate() == null || user.getLastActivityDate().isBefore(yesterday)) {
+            realStreak = 0;
+        }
+
         return AdminUserDetailsDto.builder()
                 .userId(user.getUserId())
                 .username(user.getUsername())
@@ -154,7 +170,7 @@ public class UserServiceImpl implements UserService {
                 .isLocked(user.getIsLocked())
                 .joinDate(user.getCreatedDate())
                 .userAvatar(user.getUserAvatar())
-                .currentStreak(user.getCurrentStreak())
+                .currentStreak(realStreak)
                 .isPremium(user.getIsPremium())
                 .premiumExpiryDate(user.getPremiumExpiryDate())
                 .build();

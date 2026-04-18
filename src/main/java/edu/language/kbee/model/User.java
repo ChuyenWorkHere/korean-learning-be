@@ -42,6 +42,11 @@ public class User extends DateAuditing {
 
     private String userAvatar;
 
+    private String phoneNumber;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
     @Builder.Default
     private int currentStreak = 0;
 
