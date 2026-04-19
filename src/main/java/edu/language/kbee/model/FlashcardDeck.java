@@ -36,7 +36,7 @@ public class FlashcardDeck extends DateAuditing {
 
     @Builder.Default
     @Column(name = "is_public", nullable = false)
-    private boolean isPublic = false;
+    private Boolean isPublic = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

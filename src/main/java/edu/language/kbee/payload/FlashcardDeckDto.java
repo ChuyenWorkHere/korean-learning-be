@@ -17,7 +17,7 @@ public class FlashcardDeckDto {
     private String description;
     private String level;
     private long learnedCount;
-    private boolean isPublic;
+    private Boolean isPublic;
     private UserDto user;
     private List<FlashcardDto> flashcards;
 }

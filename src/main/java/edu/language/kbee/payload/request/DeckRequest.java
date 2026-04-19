@@ -19,5 +19,5 @@ public class DeckRequest {
 
     private String description;
     private String level;
-    private boolean isPublic;
+    private Boolean isPublic;
 }

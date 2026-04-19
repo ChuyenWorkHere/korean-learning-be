@@ -58,6 +58,27 @@ public class FlashcardServiceImpl implements FlashcardService {
     }
 
     @Override
+    public List<FlashcardDto> addFlashcardsToDeck(String deckId, List<FlashcardRequest> requests) {
+        FlashcardDeck deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
+
+        List<Flashcard> flashcards = requests.stream()
+                .map(request -> Flashcard.builder()
+                        .word(request.getWord())
+                        .meaning(request.getMeaning())
+                        .exampleSentence(request.getExampleSentence())
+                        .note(request.getNote())
+                        .deck(deck)
+                        .build())
+                .collect(Collectors.toList());
+
+        List<Flashcard> savedCards = flashcardRepository.saveAll(flashcards);
+        return savedCards.stream()
+                .map(card -> mapper.map(card, FlashcardDto.class))
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public FlashcardDto updateFlashcard(String cardId, FlashcardRequest request) {
         Flashcard card = flashcardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("cardId", HttpStatus.NOT_FOUND));
