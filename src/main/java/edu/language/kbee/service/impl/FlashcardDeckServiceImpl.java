@@ -82,7 +82,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .level(request.getLevel() != null ? request.getLevel() : "Beginner")
-                .isPublic(request.isPublic())
+                .isPublic(request.getIsPublic() != null ? request.getIsPublic() : false)
                 .user(user)
                 .build();
                 
@@ -109,7 +109,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         deck.setTitle(request.getTitle());
         deck.setDescription(request.getDescription());
         deck.setLevel(request.getLevel() != null ? request.getLevel() : deck.getLevel());
-        deck.setPublic(request.isPublic());
+        deck.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : false);
         
         FlashcardDeck updatedDeck = deckRepository.save(deck);
         return mapper.map(updatedDeck, FlashcardDeckDto.class);

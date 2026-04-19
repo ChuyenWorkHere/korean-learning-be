@@ -33,6 +33,11 @@ public class FlashcardController {
         return new ResponseEntity<>(flashcardService.addFlashcardToDeck(deckId, request), HttpStatus.CREATED);
     }
 
+    @PostMapping("/deck/{deckId}/batch")
+    public ResponseEntity<List<FlashcardDto>> addFlashcardsToDeck(@PathVariable String deckId, @RequestBody List<FlashcardRequest> requests) {
+        return new ResponseEntity<>(flashcardService.addFlashcardsToDeck(deckId, requests), HttpStatus.CREATED);
+    }
+
     @PutMapping("/{cardId}")
     public ResponseEntity<FlashcardDto> updateFlashcard(@PathVariable String cardId, @Valid @RequestBody FlashcardRequest request) {
         return ResponseEntity.ok(flashcardService.updateFlashcard(cardId, request));

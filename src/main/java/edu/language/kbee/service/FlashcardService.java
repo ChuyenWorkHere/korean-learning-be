@@ -9,6 +9,7 @@ public interface FlashcardService {
     List<FlashcardDto> getFlashcardsByDeck(String deckId);
     FlashcardDto getFlashcardById(String cardId);
     FlashcardDto addFlashcardToDeck(String deckId, FlashcardRequest request);
+    List<FlashcardDto> addFlashcardsToDeck(String deckId, List<FlashcardRequest> requests);
     FlashcardDto updateFlashcard(String cardId, FlashcardRequest request);
     void deleteFlashcard(String cardId);
 }
