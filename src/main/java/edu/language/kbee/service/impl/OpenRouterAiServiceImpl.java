@@ -64,6 +64,7 @@ public class OpenRouterAiServiceImpl implements AiService {
             - Chấm điểm khắt khe! Những bài viết ở mức trung bình và có lỗi chỉ nên đạt từ 50-70 điểm.
             - Chỉ cho mức 90-100 điểm với bài viết xuất sắc, trôi chảy như người bản xứ, ngữ pháp hoàn hảo và trả lời đúng trọng tâm.
             - Nếu bài làm của học sinh chỉ đơn thuần sao chép lại đề bài/yêu cầu mà không tự trả lời, vô nghĩa, hoặc hoàn toàn lạc đề, BẠN BẮT BUỘC PHẢI CHẤM 0 ĐIỂM.
+            - Ở trường 'corrected', BẮT BUỘC phải cung cấp một phiên bản hay hơn, cao cấp hơn và tự nhiên hơn (sử dụng từ vựng/ngữ pháp bản xứ), tuyệt đối KHÔNG ĐƯỢC trả về chuỗi giống hệt với bản gốc kể cả khi học sinh viết đúng.
             
             Bài làm của học sinh: "%s"
             

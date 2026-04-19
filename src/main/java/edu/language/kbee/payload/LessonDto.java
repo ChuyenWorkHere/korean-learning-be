@@ -36,4 +36,8 @@ public class LessonDto {
 
     @NotBlank(message = "Unit ID is required")
     private String unitId;
+
+    private String courseId;
+
+    private String courseTitle;
 }

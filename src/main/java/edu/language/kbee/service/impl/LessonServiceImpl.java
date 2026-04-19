@@ -262,6 +262,8 @@ public class LessonServiceImpl implements LessonService {
                 .durationMinutes(lesson.getDurationMinutes())
                 .status(lesson.getStatus())
                 .unitId(lesson.getUnit().getUnitId())
+                .courseId(lesson.getUnit().getCourse().getCourseId())
+                .courseTitle(lesson.getUnit().getCourse().getTitle())
                 .build();
     }
 }
