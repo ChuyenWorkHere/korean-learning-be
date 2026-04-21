@@ -21,8 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.*;
 
 import java.util.UUID;
 import org.springframework.security.core.Authentication;
@@ -70,9 +69,14 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+        } catch (LockedException ex) {
+            throw new BadRequestException("Tài khoản của bạn đã bị khóa.");
+        } catch (DisabledException ex) {
+            throw new BadRequestException("Tài khoản của bạn chưa được kích hoạt.");
+        } catch (BadCredentialsException ex) {
+            throw new BadRequestException("Tài khoản hoặc mật khẩu không chính xác.");
         } catch (AuthenticationException ex) {
-            logger.error("Username: " + request.getUsername() + ", password " + request.getPassword());
-            throw new BadRequestException("Tài khoản hoặc mật khẩu không chính xác");
+            throw new BadRequestException("Đã có lỗi xảy ra trong quá trình đăng nhập.");
         }
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -168,6 +172,11 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = userRepository.findByUsername(email).orElse(null);
+
+        if(user != null && user.getIsLocked() == 1) {
+            throw new BadRequestException("Tài khoản của bạn đã bị khóa");
+        }
+
         if (user == null) {
             user = User.builder()
                     .username(email)
