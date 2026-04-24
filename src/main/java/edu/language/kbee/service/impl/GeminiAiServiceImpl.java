@@ -66,6 +66,43 @@ public class GeminiAiServiceImpl implements AiService {
     }
 
     @Override
+    public JsonNode generateTranslationPrompt(String topic) throws Exception {
+        String url = baseUrl + apiKey;
+
+        String systemPrompt = "Bạn là một chuyên gia ra đề luyện dịch thuật tiếng Hàn. " +
+                "Hãy tạo một câu hỏi dịch thuật ngắn gọn về chủ đề: " + topic + ". " +
+                "TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON CHUẨN (KHÔNG CÓ FORMAT MARKDOWN HAY CODE BLOCK), cấu trúc như sau: " +
+                "{\n" +
+                "  \"english\": \"Câu gốc bằng tiếng Việt\",\n" +
+                "  \"korean\": \"Câu dịch chuẩn nhất bằng tiếng Hàn\",\n" +
+                "  \"variations\": [\"Bản dịch tiếng Hàn chấp nhận được 1\", \"Bản dịch tiếng Hàn chấp nhận được 2\"]\n" +
+                "}";
+
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", systemPrompt);
+
+        Map<String, Object> parts = new HashMap<>();
+        parts.put("parts", List.of(textPart));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(parts));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        String response = restTemplate.postForObject(url, request, String.class);
+
+        JsonNode rootNode = objectMapper.readTree(response);
+        String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+
+        aiResponseText = cleanAiResponse(aiResponseText);
+
+        return objectMapper.readTree(aiResponseText);
+    }
+
+    @Override
     public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
         String url = baseUrl + apiKey;
 

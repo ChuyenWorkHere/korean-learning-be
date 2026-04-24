@@ -27,6 +27,17 @@ public class AiController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/generate-translation")
+    public ResponseEntity<?> generateTranslationPrompt(@RequestBody Map<String, String> payload) {
+        try {
+            String topic = payload.getOrDefault("topic", "Daily Life");
+            return ResponseEntity.ok(openRouterAi.generateTranslationPrompt(topic));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/generate-quizzes")
     public ResponseEntity<?> generateQuizzes(@RequestBody Map<String, String> payload) {
         try {

@@ -42,6 +42,10 @@ public class Book extends DateAuditing {
     @Column(columnDefinition = "TEXT")
     private String image; // Cover image URL
 
+    @Size(max = 150, message = "Author name must not exceed 150 characters")
+    @Column(length = 150)
+    private String author; // Book author name
+
     @NotNull(message = "Book status is required")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
