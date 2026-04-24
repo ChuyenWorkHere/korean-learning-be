@@ -47,6 +47,21 @@ public class OpenRouterAiServiceImpl implements AiService {
     }
 
     @Override
+    public JsonNode generateTranslationPrompt(String topic) throws Exception {
+        String systemMsg = "Bạn là một chuyên gia ra đề luyện dịch thuật tiếng Hàn. " +
+                "CHỈ trả về JSON thuần túy, KHÔNG có markdown, KHÔNG có giải thích thêm.";
+        String userMsg = "Hãy tạo một câu hỏi dịch thuật ngắn gọn về chủ đề: " + topic + ". " +
+                "TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON CHUẨN (KHÔNG CÓ FORMAT MARKDOWN HAY CODE BLOCK), cấu trúc như sau: " +
+                "{\n" +
+                "  \"english\": \"Câu gốc bằng tiếng Việt\",\n" +
+                "  \"korean\": \"Câu dịch chuẩn nhất bằng tiếng Hàn\",\n" +
+                "  \"variations\": [\"Bản dịch tiếng Hàn chấp nhận được 1\", \"Bản dịch tiếng Hàn chấp nhận được 2\"]\n" +
+                "}";
+
+        return callOpenRouterApi(systemMsg, userMsg);
+    }
+
+    @Override
     public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
         String context = taskType.equalsIgnoreCase("ESSAY")
                 ? "Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết (sử dụng đuôi câu trang trọng -는다/다, mạch văn logic, từ vựng cao cấp, cách giãn cách từ chính xác)."

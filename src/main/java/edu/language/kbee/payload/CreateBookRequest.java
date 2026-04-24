@@ -15,5 +15,6 @@ public class CreateBookRequest {
     private String level; 
     private String duration;
     private String image;
+    private String author;
     private BookStatus status;
 }

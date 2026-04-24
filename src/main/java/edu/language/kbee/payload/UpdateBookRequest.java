@@ -14,4 +14,5 @@ public class UpdateBookRequest {
     private String level;
     private String duration;
     private String image;
+    private String author;
 }

@@ -16,5 +16,6 @@ public class BookDto {
     private String level; // CourseLevel enum mapped to string
     private String duration;
     private String image;
+    private String author;
     private BookStatus status;
 }

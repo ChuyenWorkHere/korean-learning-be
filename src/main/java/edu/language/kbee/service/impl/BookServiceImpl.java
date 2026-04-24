@@ -29,6 +29,7 @@ public class BookServiceImpl implements BookService {
                 .level(CourseLevel.valueOf(request.getLevel()))
                 .duration(request.getDuration())
                 .image(request.getImage())
+                .author(request.getAuthor())
                 .status(request.getStatus() != null ? request.getStatus() : BookStatus.DRAFT)
                 .build();
 
@@ -59,6 +60,9 @@ public class BookServiceImpl implements BookService {
         book.setDuration(request.getDuration());
         if(request.getImage() != null) {
             book.setImage(request.getImage());
+        }
+        if(request.getAuthor() != null) {
+            book.setAuthor(request.getAuthor());
         }
 
         Book updatedBook = bookRepository.save(book);
@@ -94,6 +98,7 @@ public class BookServiceImpl implements BookService {
                 .level(book.getLevel().name())
                 .duration(book.getDuration())
                 .image(book.getImage())
+                .author(book.getAuthor())
                 .status(book.getStatus())
                 .build();
     }
