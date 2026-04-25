@@ -5,6 +5,7 @@ import edu.language.kbee.enums.LessonStatus;
 import edu.language.kbee.enums.LessonType;
 import edu.language.kbee.enums.ProgressStatus;
 import edu.language.kbee.exception.BadRequestException;
+import edu.language.kbee.exception.DataViolationException;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.model.*;
 import edu.language.kbee.payload.CourseDto;
@@ -17,7 +18,9 @@ import edu.language.kbee.service.LessonService;
 import edu.language.kbee.service.UserActivityService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,7 +141,12 @@ public class LessonServiceImpl implements LessonService {
     public void deleteLesson(String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
-        lessonRepository.delete(lesson);
+        try {
+            lessonRepository.delete(lesson);
+            lessonRepository.flush();
+        } catch (DataIntegrityViolationException | ConstraintViolationException e) {
+            throw new DataViolationException("Bài học có bài nộp của học viên. Không thể xóa");
+        }
     }
 
     @Override

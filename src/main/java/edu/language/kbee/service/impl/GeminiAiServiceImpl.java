@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Primary
 @RequiredArgsConstructor
 public class GeminiAiServiceImpl implements AiService {
 
@@ -242,6 +244,57 @@ public class GeminiAiServiceImpl implements AiService {
         Map<String, Object> textPart = new HashMap<>();
         textPart.put("text", systemPrompt);
         return textPart;
+    }
+
+    @Override
+    public JsonNode splitSubtitleWithAI(String rawSubtitleText) throws Exception {
+        String url = baseUrl + apiKey;
+
+        String systemPrompt = """
+            Bạn là chuyên gia ngôn ngữ tiếng Hàn. Tôi sẽ cung cấp cho bạn một đoạn transcript tiếng Hàn (phụ đề từ YouTube).
+            
+            NHIỆM VỤ: Hãy chia đoạn transcript này thành các câu/cụm từ có ý nghĩa hoàn chỉnh, phù hợp cho bài tập nghe chép chính tả (dictation).
+            
+            QUY TẮC CHIA CÂU:
+            1. CHỈ tách câu khi gặp dấu kết thúc câu rõ ràng (như dấu chấm '.', dấu hỏi chấm '?', dấu chấm than '!', dấu ngã '~' hoặc các đuôi câu kết thúc rõ ràng).
+            2. KHÔNG ĐƯỢC tách lắt nhắt thành các cụm từ ngắn. Các câu dài đến đâu cũng kệ, cứ giữ nguyên thành 1 câu hoàn chỉnh.
+            3. TUYỆT ĐỐI KHÔNG sửa lỗi chính tả, KHÔNG thêm bớt từ. Phải giữ nguyên 100% text gốc. Nếu đoạn text bị cắt dở, cứ giữ nguyên.
+            4. Giữ nguyên thứ tự xuất hiện trong bản gốc.
+            
+            TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON OBJECT CHUẨN (KHÔNG CÓ MARKDOWN), cấu trúc như sau:
+            {
+              "sentences": [
+                "câu 1 hoàn chỉnh", 
+                "câu 2 hoàn chỉnh", 
+                "câu 3 hoàn chỉnh"
+              ]
+            }
+            
+            TRANSCRIPT:
+            """ + rawSubtitleText;
+
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", systemPrompt);
+
+        Map<String, Object> parts = new HashMap<>();
+        parts.put("parts", List.of(textPart));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(parts));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        String response = restTemplate.postForObject(url, request, String.class);
+
+        JsonNode rootNode = objectMapper.readTree(response);
+        String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+
+        aiResponseText = cleanAiResponse(aiResponseText);
+
+        return objectMapper.readTree(aiResponseText);
     }
 
     private String cleanAiResponse(String response) {
