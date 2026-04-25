@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Primary
 @RequiredArgsConstructor
 public class OpenRouterAiServiceImpl implements AiService {
 
@@ -151,6 +150,36 @@ public class OpenRouterAiServiceImpl implements AiService {
             logger.error("Lỗi tạo quiz: {}", e.getMessage());
             throw new RuntimeException("Lỗi tạo quiz: " + e.getMessage());
         }
+    }
+
+    @Override
+    public JsonNode splitSubtitleWithAI(String rawSubtitleText) throws Exception {
+        String systemMsg = "Bạn là chuyên gia ngôn ngữ tiếng Hàn. CHỈ trả về JSON Array thuần túy, KHÔNG có markdown, KHÔNG có giải thích thêm.";
+        String userMsg = """
+            Tôi cung cấp cho bạn một đoạn transcript tiếng Hàn (phụ đề từ YouTube).
+            
+            NHIỆM VỤ: Hãy chia đoạn transcript này thành các câu/cụm từ có ý nghĩa hoàn chỉnh, phù hợp cho bài tập nghe chép chính tả (dictation).
+            
+            QUY TẮC CHIA CÂU:
+            1. Mỗi câu/cụm từ phải có ý nghĩa hoàn chỉnh.
+            2. Mỗi câu nên dài hơn một chút: khoảng 15-30 âm tiết / ký tự tiếng Hàn (tương đương 5-12 từ/eojeol). Tránh chia lắt nhắt quá ngắn.
+            3. Câu dài phải được tách thành các cụm theo ranh giới tự nhiên (sau trợ từ, liên từ -고/-면/-서/-는데, hoặc dấu phẩy).
+            4. TUYỆT ĐỐI KHÔNG sửa lỗi chính tả, KHÔNG thêm bớt từ. Phải giữ nguyên 100% text gốc. Nếu đoạn text bị cắt dở, cứ giữ nguyên.
+            5. Giữ nguyên thứ tự xuất hiện trong bản gốc.
+            
+            TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON OBJECT, cấu trúc như sau:
+            {
+              "sentences": [
+                "câu 1", 
+                "câu 2", 
+                "câu 3"
+              ]
+            }
+            
+            TRANSCRIPT:
+            """ + rawSubtitleText;
+
+        return callOpenRouterApi(systemMsg, userMsg);
     }
 
     private JsonNode callOpenRouterApi(String systemMsg, String userMsg) throws Exception {

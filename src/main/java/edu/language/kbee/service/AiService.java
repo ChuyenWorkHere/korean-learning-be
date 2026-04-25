@@ -12,4 +12,6 @@ public interface AiService {
     JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception;
 
     JsonNode generateQuizzes(String context, String skillType) throws Exception;
+
+    JsonNode splitSubtitleWithAI(String rawSubtitleText) throws Exception;
 }
