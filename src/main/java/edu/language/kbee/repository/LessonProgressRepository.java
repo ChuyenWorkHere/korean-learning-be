@@ -48,6 +48,10 @@ public interface LessonProgressRepository extends JpaRepository<LessonProgress, 
 
     boolean existsByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
 
+    boolean existsByLesson_LessonId(String lessonId);
+
+    boolean existsByLesson_Unit_UnitId(String unitId);
+
     @Query("SELECT COUNT(lp.id) FROM LessonProgress lp WHERE lp.user.userId = :userId AND lp.status = ProgressStatus.COMPLETED")
     Long countAllCompletedLessonsByUserId(@Param("userId") String userId);
 

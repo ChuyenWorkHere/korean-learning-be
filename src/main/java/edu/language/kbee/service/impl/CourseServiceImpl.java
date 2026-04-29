@@ -1,5 +1,6 @@
 package edu.language.kbee.service.impl;
 
+import edu.language.kbee.enums.CourseLevel;
 import edu.language.kbee.enums.CourseStatus;
 import edu.language.kbee.exception.BadRequestException;
 import edu.language.kbee.exception.ResourceNotFoundException;
@@ -83,10 +84,10 @@ public class CourseServiceImpl implements CourseService {
             course.setIconName(courseDto.getIconName());
         }
         if (courseDto.getLevel() != null) {
-            course.setLevel(edu.language.kbee.enums.CourseLevel.valueOf(courseDto.getLevel()));
+            course.setLevel(CourseLevel.valueOf(courseDto.getLevel()));
         }
         if (courseDto.getStatus() != null) {
-            course.setStatus(edu.language.kbee.enums.CourseStatus.valueOf(courseDto.getStatus()));
+            course.setStatus(CourseStatus.valueOf(courseDto.getStatus()));
         }
 
         Course updatedCourse = courseRepository.save(course);
@@ -112,6 +113,11 @@ public class CourseServiceImpl implements CourseService {
     public void deleteCourse(String courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Course not found"));
+
+        if (userCourseRepository.existsByCourse_CourseId(courseId)) {
+            throw new BadRequestException("Khóa học đã có học viên tham gia, không thể xóa");
+        }
+
         courseRepository.delete(course);
     }
 }

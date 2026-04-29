@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface UserCourseRepository extends JpaRepository<UserCourse, String> {
     List<UserCourse> findByUser_UserId(String userId);
     UserCourse findByUser_UserIdAndCourse_CourseId(String userId, String courseId);
+    boolean existsByCourse_CourseId(String courseId);
 
     Optional<UserCourse> findFirstByUser_UserIdOrderByLastModifiedDateDesc(String userId);
 

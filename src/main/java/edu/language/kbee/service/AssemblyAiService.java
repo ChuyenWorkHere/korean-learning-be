@@ -4,6 +4,6 @@ import tools.jackson.databind.JsonNode;
 
 public interface AssemblyAiService {
 
-    JsonNode generateTranscript(String audioUrl) throws Exception;
+    JsonNode generateTranscript(String audioUrl, String languageCode) throws Exception;
 
 }

@@ -42,7 +42,7 @@ public class FileController {
     public ResponseEntity<?> autoTranscribe(@RequestBody Map<String, String> payload) {
         try {
             String audioUrl = payload.get("audioUrl");
-            JsonNode result = assemblyAiService.generateTranscript(audioUrl);
+            JsonNode result = assemblyAiService.generateTranscript(audioUrl, "ko");
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));

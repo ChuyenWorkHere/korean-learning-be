@@ -182,6 +182,23 @@ public class OpenRouterAiServiceImpl implements AiService {
         return callOpenRouterApi(systemMsg, userMsg);
     }
 
+    @Override
+    public JsonNode extractVocabulary(String content) throws Exception {
+        String systemMsg = "Bạn là một chuyên gia ngôn ngữ tiếng Hàn. CHỈ trả về JSON thuần túy, KHÔNG có markdown, KHÔNG có giải thích thêm.";
+        String userMsg = "Hãy phân tích đoạn văn bản tiếng Hàn dưới đây và trích xuất ra các từ vựng quan trọng, cụm từ hay, và biểu đạt đáng lưu ý mà người học tiếng Hàn nên biết. " +
+                "QUY TẮC: " +
+                "1. Trích xuất từ 5 đến 15 từ/cụm từ (tùy độ dài văn bản). " +
+                "2. Ưu tiên: từ vựng trung cấp-cao cấp, thành ngữ, cụm từ cố định, biểu đạt hay, ngữ pháp đặc biệt. " +
+                "3. Bỏ qua các từ quá cơ bản mà ai cũng biết (ví dụ: 나, 그, 이, 은/는, 이다...). " +
+                "4. Với mỗi mục, cung cấp nghĩa tiếng Việt rõ ràng. " +
+                "5. Nếu văn bản quá ngắn hoặc không có nội dung tiếng Hàn, trả về mảng rỗng. " +
+                "TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON OBJECT CHUẨN, cấu trúc: " +
+                "{ \"vocabulary\": [ { \"word\": \"từ/cụm từ tiếng Hàn\", \"meaning\": \"nghĩa tiếng Việt\", \"type\": \"noun|verb|adjective|adverb|phrase|idiom|grammar\" } ] } " +
+                "VĂN BẢN CẦN PHÂN TÍCH: " + content;
+
+        return callOpenRouterApi(systemMsg, userMsg);
+    }
+
     private JsonNode callOpenRouterApi(String systemMsg, String userMsg) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

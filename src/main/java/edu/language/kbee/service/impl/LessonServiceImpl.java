@@ -141,6 +141,11 @@ public class LessonServiceImpl implements LessonService {
     public void deleteLesson(String lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        if (progressRepository.existsByLesson_LessonId(lessonId)) {
+            throw new BadRequestException("Bài học này đã có học viên làm bài, không thể xóa");
+        }
+
         try {
             lessonRepository.delete(lesson);
             lessonRepository.flush();
