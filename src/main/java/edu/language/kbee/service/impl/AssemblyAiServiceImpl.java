@@ -26,7 +26,7 @@ public class AssemblyAiServiceImpl implements AssemblyAiService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public JsonNode generateTranscript(String audioUrl) throws Exception {
+    public JsonNode generateTranscript(String audioUrl, String languageCode) throws Exception {
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", apiKey);
@@ -34,7 +34,7 @@ public class AssemblyAiServiceImpl implements AssemblyAiService {
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("audio_url", audioUrl);
-        requestBody.put("language_code", "ko");
+        requestBody.put("language_code", (languageCode != null && !languageCode.isBlank()) ? languageCode : "ko");
         requestBody.put("speaker_labels", true);
         requestBody.put("speech_models", List.of("universal-2"));
 

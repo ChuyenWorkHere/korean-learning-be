@@ -297,6 +297,46 @@ public class GeminiAiServiceImpl implements AiService {
         return objectMapper.readTree(aiResponseText);
     }
 
+    @Override
+    public JsonNode extractVocabulary(String content) throws Exception {
+        String url = baseUrl + apiKey;
+
+        String systemPrompt = "Bạn là một chuyên gia ngôn ngữ tiếng Hàn. Tôi sẽ cung cấp cho bạn một đoạn văn bản tiếng Hàn (bài đọc/truyện). " +
+                "NHIỆM VỤ: Hãy phân tích đoạn văn bản và trích xuất ra các từ vựng quan trọng, cụm từ hay, và biểu đạt đáng lưu ý mà người học tiếng Hàn nên biết. " +
+                "QUY TẮC: " +
+                "1. Trích xuất từ 5 đến 15 từ/cụm từ (tùy độ dài văn bản). " +
+                "2. Ưu tiên: từ vựng trung cấp-cao cấp, thành ngữ, cụm từ cố định, biểu đạt hay, ngữ pháp đặc biệt. " +
+                "3. Bỏ qua các từ quá cơ bản mà ai cũng biết (ví dụ: 나, 그, 이, 은/는, 이다...). " +
+                "4. Với mỗi mục, cung cấp nghĩa tiếng Việt rõ ràng. " +
+                "5. Nếu văn bản quá ngắn hoặc không có nội dung tiếng Hàn, trả về mảng rỗng. " +
+                "TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON OBJECT CHUẨN (KHÔNG CÓ MARKDOWN HAY CODE BLOCK), cấu trúc: " +
+                "{ \"vocabulary\": [ { \"word\": \"từ/cụm từ tiếng Hàn\", \"meaning\": \"nghĩa tiếng Việt\", \"type\": \"noun|verb|adjective|adverb|phrase|idiom|grammar\" } ] } " +
+                "VĂN BẢN CẦN PHÂN TÍCH: " + content;
+
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", systemPrompt);
+
+        Map<String, Object> parts = new HashMap<>();
+        parts.put("parts", List.of(textPart));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(parts));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        String response = restTemplate.postForObject(url, request, String.class);
+
+        JsonNode rootNode = objectMapper.readTree(response);
+        String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+
+        aiResponseText = cleanAiResponse(aiResponseText);
+
+        return objectMapper.readTree(aiResponseText);
+    }
+
     private String cleanAiResponse(String response) {
         return response.replaceAll("(?s)^```json\\s*", "").replaceAll("(?s)\\s*```$", "").trim();
     }

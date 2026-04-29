@@ -3,6 +3,7 @@ package edu.language.kbee.service.impl;
 
 import edu.language.kbee.enums.LessonStatus;
 import edu.language.kbee.enums.ProgressStatus;
+import edu.language.kbee.exception.BadRequestException;
 import edu.language.kbee.model.*;
 import edu.language.kbee.payload.LessonDto;
 import edu.language.kbee.payload.AdminUnitDto;
@@ -175,6 +176,10 @@ public class UnitServiceImpl implements UnitService {
     public void deleteUnit(String unitId) {
         Unit unit = unitRepository.findById(unitId)
                 .orElseThrow(() -> new RuntimeException("Unit not found"));
+
+        if (progressRepository.existsByLesson_Unit_UnitId(unitId)) {
+            throw new BadRequestException("Chương này chứa bài học đã có học viên làm bài, không thể xóa");
+        }
 
         unitRepository.delete(unit);
     }

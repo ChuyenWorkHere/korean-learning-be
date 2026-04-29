@@ -71,10 +71,11 @@ public class DictationLessonController {
     public ResponseEntity<?> generateTranscript(@RequestBody Map<String, String> payload) {
         try {
             String audioUrl = payload.get("audioUrl");
+            String languageCode = payload.get("languageCode");
             if (audioUrl == null || audioUrl.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Audio URL is required"));
             }
-            JsonNode result = assemblyAiService.generateTranscript(audioUrl);
+            JsonNode result = assemblyAiService.generateTranscript(audioUrl, languageCode);
             List<DictationSentenceDto> sentences = TranscriptSplitter.split(result);
             return ResponseEntity.ok(sentences);
         } catch (Exception e) {

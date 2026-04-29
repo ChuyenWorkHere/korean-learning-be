@@ -56,4 +56,17 @@ public class AiController {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/extract-vocabulary")
+    public ResponseEntity<?> extractVocabulary(@RequestBody Map<String, String> payload) {
+        try {
+            String content = payload.get("content");
+            if (content == null || content.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Content is required"));
+            }
+            return ResponseEntity.ok(openRouterAi.extractVocabulary(content));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
