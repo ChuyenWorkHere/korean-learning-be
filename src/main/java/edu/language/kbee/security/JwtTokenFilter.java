@@ -98,7 +98,8 @@ public class JwtTokenFilter extends OncePerRequestFilter {
                 Pair.of("/api/v1/auth/signup", "POST"),
                 Pair.of("/api/v1/auth/google", "POST"),
                 Pair.of("/api/v1/public", "GET"),
-                Pair.of("/api/v1/public/ping", "GET"));
+                Pair.of("/api/v1/public/ping", "GET"),
+                Pair.of("/loaderio-3ce7a2dd8a033d5208bcc83a550bbae2", "GET"));
 
         final List<String> staticResourcePrefixes = Arrays.asList(
                 "/images/",
