@@ -102,4 +102,5 @@ public class AuthController {
     public ResponseEntity<String> keepAwake() {
         return ResponseEntity.ok("K-Bee Backend is awake!");
     }
+
 }
