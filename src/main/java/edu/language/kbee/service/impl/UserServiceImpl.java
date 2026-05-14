@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -183,6 +185,15 @@ public class UserServiceImpl implements UserService {
 
         List<PaymentTransaction> transactions = paymentTransactionRepository.findByUsernameOrderByCreatedAtDesc(user.getUsername());
         
+        List<Long> packageIds = transactions.stream()
+                .map(PaymentTransaction::getPackageId)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+                
+        Map<Long, SubscriptionPackage> packageMap = subscriptionPackageRepository.findAllById(packageIds).stream()
+                .collect(Collectors.toMap(SubscriptionPackage::getId, pkg -> pkg));
+
         String currentPlan = "Miễn phí";
         String price = "0";
         String billingCycle = "N/A";
@@ -190,7 +201,7 @@ public class UserServiceImpl implements UserService {
 
         if (user.getIsPremium() == 1 && !transactions.isEmpty()) {
             PaymentTransaction latestTxn = transactions.get(0);
-            SubscriptionPackage pkg = subscriptionPackageRepository.findById(latestTxn.getPackageId()).orElse(null);
+            SubscriptionPackage pkg = packageMap.get(latestTxn.getPackageId());
             if (pkg != null) {
                 currentPlan = pkg.getName();
                 price = pkg.getPrice().toString();
@@ -199,7 +210,7 @@ public class UserServiceImpl implements UserService {
         }
 
         List<AdminUserBillingDto.InvoiceDto> invoices = transactions.stream().map(txn -> {
-            SubscriptionPackage pkg = subscriptionPackageRepository.findById(txn.getPackageId()).orElse(null);
+            SubscriptionPackage pkg = packageMap.get(txn.getPackageId());
             String amt = pkg != null ? pkg.getPrice().toString() : "0";
             return AdminUserBillingDto.InvoiceDto.builder()
                     .id(txn.getTxnRef())
