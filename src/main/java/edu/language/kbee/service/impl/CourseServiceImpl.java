@@ -31,6 +31,10 @@ public class CourseServiceImpl implements CourseService {
     public List<CourseDto> getAllCourses() {
 
         List<Course> courses = courseRepository.findAll();
+        
+        if (courses.isEmpty()) {
+            return List.of();
+        }
 
         List<String> courseIds = courses.stream().map(Course::getCourseId).toList();
 
@@ -39,11 +43,19 @@ public class CourseServiceImpl implements CourseService {
         //courseId + enrollment
         Map<String, Long> enrollmentMap = totalEnrollment.stream()
                 .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+                
+        List<Object[]> totalUnitsData = courseRepository.countTotalUnitsByCourseIds(courseIds);
+        Map<String, Long> unitsMap = totalUnitsData.stream()
+                .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+
+        List<Object[]> totalLessonsData = courseRepository.countTotalLessonsByCourseIds(courseIds);
+        Map<String, Long> lessonsMap = totalLessonsData.stream()
+                .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
 
         return courses.stream().map(course -> {
             CourseDto temp = modelMapper.map(course, CourseDto.class);
-            temp.setTotalUnits(course.getUnits().size());
-            temp.setTotalLessons(course.getUnits().stream().mapToInt(unit -> unit.getLessons().size()).sum());
+            temp.setTotalUnits(Math.toIntExact(unitsMap.getOrDefault(course.getCourseId(), 0L)));
+            temp.setTotalLessons(Math.toIntExact(lessonsMap.getOrDefault(course.getCourseId(), 0L)));
             temp.setTotalEnrollment(Math.toIntExact(enrollmentMap.getOrDefault(course.getCourseId(), 0L)));
             return temp;
         }).toList();
