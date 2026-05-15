@@ -53,7 +53,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     if (request.getSubmissionType().name().equals("ESSAY")) {
                          blockContext = "Essay Title/Topic: " + block.path("title").asText() + "\nInstructions: " + block.path("instructions").asText();
                     } else if (request.getSubmissionType().name().equals("TRANSLATION")) {
-                         blockContext = "Translate this phrase: " + block.path("korean").asText() + " or " + block.path("english").asText();
+                         blockContext = "Câu cần dịch sang tiếng Hàn: " + block.path("english").asText();
                     }
                     break;
                 }
@@ -127,6 +127,103 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .createdAt(submission.getCreatedDate())
                 .tutorScore(submission.getTutorScore())
                 .tutorFeedback(submission.getTutorFeedback())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public SubmissionResponse submitAndCheckTranslation(SubmissionRequest request) {
+        User loggedInUser = authUtil.getLoggedInUser();
+        Lesson lesson = lessonRepository.findById(request.getLessonId())
+                .orElseThrow(() -> new BadRequestException("Lesson not found"));
+
+        if (lesson.getStatus() != LessonStatus.PUBLISHED) {
+            throw new BadRequestException("Lesson is not published");
+        }
+
+        String correctAnswer = "Không có đáp án tham khảo";
+        int score = 0;
+
+        try {
+            JsonNode blocks = objectMapper.readTree(lesson.getContent());
+            for (JsonNode block : blocks) {
+                if (block.path("id").asText().equals(request.getBlockId())) {
+                    if (request.getSubmissionType().name().equals("TRANSLATION")) {
+                        correctAnswer = block.path("korean").asText();
+                        String normalizedSubmit = request.getSubmittedContent().replaceAll("[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]", "").toLowerCase();
+                        String normalizedCorrect = correctAnswer.replaceAll("[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]", "").toLowerCase();
+                        
+                        boolean isCorrect = normalizedSubmit.equals(normalizedCorrect);
+
+                        if (!isCorrect && block.has("variations") && block.path("variations").isArray()) {
+                            for (JsonNode variationNode : block.path("variations")) {
+                                String normalizedVariation = variationNode.asText().replaceAll("[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ]", "").toLowerCase();
+                                if (normalizedSubmit.equals(normalizedVariation)) {
+                                    isCorrect = true;
+                                    correctAnswer = variationNode.asText();
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isCorrect) {
+                            score = 100;
+                        } else {
+                            score = 50;
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            // ignore JSON parse error
+        }
+
+        String mockFeedbackStr = String.format("""
+                {
+                  "original": "%s",
+                  "userMeaning": "Câu dịch của bạn",
+                  "corrected": "%s",
+                  "aiMeaning": "Đáp án mẫu",
+                  "score": %d,
+                  "performanceText": "Hãy đối chiếu và luyện tập thêm nhé!",
+                  "nativeNuance": "Bạn đang xem đáp án tự động từ hệ thống. Nếu muốn phân tích lỗi sai, hãy thử dùng tính năng AI Chấm.",
+                  "breakdowns": []
+                }
+                """, 
+                request.getSubmittedContent().replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", ""),
+                correctAnswer.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", ""),
+                score
+        );
+
+        JsonNode feedbackNode;
+        try {
+            feedbackNode = objectMapper.readTree(mockFeedbackStr);
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi parse JSON: " + e.getMessage());
+        }
+
+        StudentSubmission submission = StudentSubmission.builder()
+                .user(loggedInUser)
+                .lesson(lesson)
+                .blockId(request.getBlockId())
+                .submissionType(request.getSubmissionType())
+                .submittedContent(request.getSubmittedContent())
+                .aiScore(score)
+                .aiFeedback(mockFeedbackStr)
+                .build();
+
+        submission = submissionRepository.save(submission);
+
+        return SubmissionResponse.builder()
+                .id(submission.getId())
+                .lessonId(submission.getLesson().getLessonId())
+                .blockId(submission.getBlockId())
+                .submissionType(submission.getSubmissionType())
+                .submittedContent(submission.getSubmittedContent())
+                .aiScore(submission.getAiScore())
+                .aiFeedback(feedbackNode)
+                .createdAt(submission.getCreatedDate())
                 .build();
     }
 

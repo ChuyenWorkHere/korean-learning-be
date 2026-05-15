@@ -8,4 +8,6 @@ public interface SubmissionService {
     SubmissionResponse submitAndGrade(SubmissionRequest request);
 
     SubmissionResponse findLastSubmission(String lessonId, String blockId);
+
+    SubmissionResponse submitAndCheckTranslation(SubmissionRequest request);
 }

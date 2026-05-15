@@ -11,6 +11,7 @@ import edu.language.kbee.model.*;
 import edu.language.kbee.payload.CourseDto;
 import edu.language.kbee.payload.LessonDto;
 import edu.language.kbee.payload.request.LessonCompletionRequest;
+import edu.language.kbee.payload.response.LessonCompletionResponse;
 import edu.language.kbee.repository.LessonProgressRepository;
 import edu.language.kbee.repository.LessonRepository;
 import edu.language.kbee.repository.UnitRepository;
@@ -24,12 +25,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +45,7 @@ public class LessonServiceImpl implements LessonService {
     private final ModelMapper modelMapper;
     private final AuthUtil authUtil;
     private final UserActivityService userActivityService;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
@@ -189,7 +193,7 @@ public class LessonServiceImpl implements LessonService {
 
     @Override
     @Transactional
-    public Map<String, String> completeLessonByUser(String lessonId, LessonCompletionRequest request) {
+    public LessonCompletionResponse completeLessonByUser(String lessonId, LessonCompletionRequest request) {
 
         User user = authUtil.getLoggedInUser();
 
@@ -199,6 +203,69 @@ public class LessonServiceImpl implements LessonService {
         Unit currentUnit = currentLesson.getUnit();
         String courseId = currentUnit.getCourse().getCourseId();
 
+        int score;
+        int correctCount = 0;
+        int totalCount = 0;
+        Map<String, Boolean> results = new LinkedHashMap<>();
+
+        if (request.getAnswers() != null && !request.getAnswers().isEmpty()) {
+            // Backend chấm điểm dựa trên answers gửi lên
+            try {
+                JsonNode blocks = objectMapper.readTree(currentLesson.getContent());
+                for (JsonNode block : blocks) {
+                    String blockType = block.path("type").asText();
+                    String blockId = block.path("id").asText();
+
+                    if ("quiz".equals(blockType)) {
+                        totalCount++;
+                        String userAnswer = request.getAnswers().get(blockId);
+                        boolean isCorrect = false;
+
+                        if (userAnswer != null && block.has("options")) {
+                            for (JsonNode option : block.path("options")) {
+                                if (option.path("id").asText().equals(userAnswer) && option.path("isCorrect").asBoolean()) {
+                                    isCorrect = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (isCorrect) correctCount++;
+                        results.put(blockId, isCorrect);
+
+                    } else if ("dictation".equals(blockType)) {
+                        String text = block.path("text").asText();
+                        // Regex tách chuỗi theo định dạng [từ_cần_điền]
+                        String[] parts = text.split("\\[(.*?)\\]", -1);
+                        Matcher matcher = Pattern.compile("\\[(.*?)\\]").matcher(text);
+                        int blankIndex = 0;
+
+                        while (matcher.find()) {
+                            totalCount++;
+                            blankIndex++;
+                            // Frontend gửi key dạng "blockId-oddIndex", ta tái tạo lại
+                            int oddIndex = blankIndex * 2 - 1;
+                            String answerKey = blockId + "-" + oddIndex;
+                            String expectedWord = matcher.group(1).trim().toLowerCase();
+                            String userAnswer = (request.getAnswers().getOrDefault(answerKey, "")).trim().toLowerCase();
+
+                            boolean isCorrect = expectedWord.equals(userAnswer);
+                            if (isCorrect) correctCount++;
+                            results.put(answerKey, isCorrect);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                throw new BadRequestException("Lỗi khi chấm điểm bài học: " + e.getMessage());
+            }
+
+            score = totalCount == 0 ? 0 : Math.round((float) correctCount / totalCount * 100);
+        } else {
+            // Fallback: Frontend gửi score trực tiếp (dùng cho Writing/Translation)
+            score = request.getScore() != null ? request.getScore() : 0;
+        }
+
+        // --- UPDATE PROGRESS ---
         LessonProgress currentProgress = progressRepository
                 .findByUser_UserIdAndLesson_LessonId(user.getUserId(), lessonId)
                 .orElse(LessonProgress.builder()
@@ -207,55 +274,55 @@ public class LessonServiceImpl implements LessonService {
                         .status(ProgressStatus.NOT_STARTED)
                         .build());
 
-        // Update progress if not yet completed OR always update score/status if it's a new attempt
-        Integer score = request.getScore() != null ? request.getScore() : 0;
         ProgressStatus newStatus = score >= 80 ? ProgressStatus.COMPLETED : ProgressStatus.FAILED;
-
-        if(currentLesson.getType() == LessonType.WRITING) {
-            newStatus = ProgressStatus.COMPLETED;
-        }
 
         currentProgress.setScore(score);
         currentProgress.setStatus(newStatus);
         currentProgress.setCompletedAt(LocalDateTime.now());
         progressRepository.save(currentProgress);
 
-        // Logic to determine the NEXT lesson regardless of whether current was already completed
-        List<Lesson> nextLessons = lessonRepository.findNextLessonToLearn(
-                courseId,
-                currentUnit.getOrderIndex(),
-                currentLesson.getOrderIndex(),
-                LessonStatus.PUBLISHED,
-                PageRequest.of(0, 1)
-        );
+        // --- FIND NEXT LESSON ---
+        String nextLessonId = "0";
 
-        String nextLessonId = "0"; // Default to end of unit (0)
+        if (newStatus == ProgressStatus.COMPLETED) {
+            List<Lesson> nextLessons = lessonRepository.findNextLessonToLearn(
+                    courseId,
+                    currentUnit.getOrderIndex(),
+                    currentLesson.getOrderIndex(),
+                    LessonStatus.PUBLISHED,
+                    PageRequest.of(0, 1)
+            );
 
-        if (!nextLessons.isEmpty()) {
-            Lesson nextLesson = nextLessons.get(0);
-            nextLessonId = nextLesson.getLessonId();
+            if (!nextLessons.isEmpty()) {
+                Lesson nextLesson = nextLessons.get(0);
+                nextLessonId = nextLesson.getLessonId();
 
-            boolean nextProgressExists = progressRepository
-                    .existsByUser_UserIdAndLesson_LessonId(user.getUserId(), nextLessonId);
+                boolean nextProgressExists = progressRepository
+                        .existsByUser_UserIdAndLesson_LessonId(user.getUserId(), nextLessonId);
 
-            if (!nextProgressExists) {
-                LessonProgress nextLessonProgress = LessonProgress.builder()
-                        .lesson(nextLesson)
-                        .status(ProgressStatus.NOT_STARTED)
-                        .user(user)
-                        .build();
+                if (!nextProgressExists) {
+                    LessonProgress nextLessonProgress = LessonProgress.builder()
+                            .lesson(nextLesson)
+                            .status(ProgressStatus.NOT_STARTED)
+                            .user(user)
+                            .build();
 
-                progressRepository.save(nextLessonProgress);
+                    progressRepository.save(nextLessonProgress);
+                }
             }
         }
 
         userActivityService.recordActivity(user.getUserId());
 
-        return Map.of(
-            "courseId", courseId,
-            "nextLessonId", nextLessonId,
-            "message", "Lesson progress tracked successfully"
-        );
+        return LessonCompletionResponse.builder()
+                .courseId(courseId)
+                .nextLessonId(nextLessonId)
+                .message("Lesson progress tracked successfully")
+                .score(score)
+                .correctCount(correctCount)
+                .totalCount(totalCount)
+                .results(results)
+                .build();
     }
 
     @Override

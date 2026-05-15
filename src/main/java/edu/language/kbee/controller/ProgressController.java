@@ -1,6 +1,7 @@
 package edu.language.kbee.controller;
 
 import edu.language.kbee.payload.request.LessonCompletionRequest;
+import edu.language.kbee.payload.response.LessonCompletionResponse;
 import edu.language.kbee.service.LessonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +20,10 @@ public class ProgressController {
     private final LessonService lessonService;
 
     @PutMapping("/lessons/{lessonId}/complete")
-    public ResponseEntity<Map<String, String>> completeLesson(@PathVariable String lessonId, 
+    public ResponseEntity<LessonCompletionResponse> completeLesson(@PathVariable String lessonId, 
                                                             @RequestBody LessonCompletionRequest request) {
-        Map<String, String> nextLessonData = lessonService.completeLessonByUser(lessonId, request);
-        return ResponseEntity.ok(nextLessonData);
+        LessonCompletionResponse response = lessonService.completeLessonByUser(lessonId, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/progress/lessons/count")
