@@ -22,6 +22,12 @@ public class SubmissionController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/translation-check")
+    public ResponseEntity<SubmissionResponse> submitAndCheckTranslation(@RequestBody @Valid SubmissionRequest request) {
+        SubmissionResponse response = submissionService.submitAndCheckTranslation(request);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{lessonId}/{blockId}")
     public ResponseEntity<SubmissionResponse> getLastSubmission(@PathVariable String lessonId, @PathVariable String blockId) {
         SubmissionResponse response = submissionService.findLastSubmission(lessonId, blockId);
