@@ -52,14 +52,12 @@ public class StudyServiceImpl implements StudyService {
                 .toList();
 
         // 3. Find completely new cards (cards without any progress record)
+        List<String> cardsWithProgress = progressRepository.findCardIdsWithProgress(user, deck);
         List<Flashcard> newCards = new ArrayList<>();
         for (Flashcard card : allCards) {
-            // If it's not in the due list, check if it has a progress record at all
-            if (!dueCardIds.contains(card.getCardId())) {
-                boolean hasProgress = progressRepository.findByUserAndFlashcard(user, card).isPresent();
-                if (!hasProgress) {
-                    newCards.add(card);
-                }
+            // If it has NO progress record at all
+            if (!cardsWithProgress.contains(card.getCardId())) {
+                newCards.add(card);
             }
         }
 

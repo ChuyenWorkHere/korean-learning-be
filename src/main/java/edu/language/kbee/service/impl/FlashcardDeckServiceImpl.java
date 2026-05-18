@@ -102,7 +102,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
             // Ignore if no user is logged in
         }
         boolean isAdmin = user != null && user.getRoles().stream().anyMatch(role -> role.getRoleName().equals(RoleName.ADMIN));
-        if(user != null  && !deck.getUser().getUserId().equals(user.getUserId()) || !isAdmin) {
+        if(user != null  && !deck.getUser().getUserId().equals(user.getUserId())) {
             throw new UnauthorizedException("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
 
