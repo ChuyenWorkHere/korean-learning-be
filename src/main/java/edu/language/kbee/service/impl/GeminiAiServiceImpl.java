@@ -35,7 +35,7 @@ public class GeminiAiServiceImpl implements AiService {
 
     @Override
     public JsonNode generateWritingPrompt(String topic) throws Exception {
-        // Dùng model gemini-1.5-flash cho tốc độ siêu nhanh
+        // Dùng model gemini-3-flash cho tốc độ siêu nhanh
         String url = baseUrl + apiKey;
 
         String systemPrompt = "Bạn là một chuyên gia ra đề thi TOPIK II phần Viết (Writing). " +
@@ -108,9 +108,27 @@ public class GeminiAiServiceImpl implements AiService {
     public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
         String url = baseUrl + apiKey;
 
-        // Xây dựng ngữ cảnh chấm điểm (Dịch câu hay Viết luận)
+        // Xây dựng ngữ cảnh chấm điểm
         String context = taskType.equalsIgnoreCase("ESSAY")
-                ? "Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết (sử dụng đuôi câu trang trọng -는다/다, mạch văn logic, từ vựng cao cấp, cách giãn cách từ chính xác)."
+                ? """
+                  Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết. BẮT BUỘC chấm điểm theo 4 tiêu chí sau:
+                  (1) Nội dung và hoàn thành nhiệm vụ: Trả lời đúng yêu cầu đề bài, lập luận thuyết phục.
+                  (2) Tổ chức và mạch lạc: Cấu trúc 3 phần (Mở bài, Thân bài, Kết bài) rõ ràng, các đoạn liên kết logic.
+                  (3) Sử dụng từ vựng: Từ vựng đa dạng, phù hợp trình độ cao cấp.
+                  (4) Chính xác ngữ pháp: Ngữ pháp chính xác, sử dụng được cấu trúc nâng cao.
+                  
+                  YÊU CẦU VỀ CẤU TRÚC (KHUYẾN NGHỊ):
+                  - Mở bài (서론): nên có, giới thiệu chủ đề và nêu quan điểm.
+                  - Thân bài (본론): nên trình bày 2-3 luận điểm với dẫn chứng cụ thể. (Điểm cộng lớn nếu trình bày được mặt đối lập rồi phản bác).
+                  - Kết bài (결론): nên có, tóm tắt quan điểm và kết luận.
+                  - CHÚ Ý QUAN TRỌNG VỀ ĐỘ DÀI: Hãy đếm TỔNG số lượng ký tự của toàn bộ bài viết (không tính khoảng trắng). KHÔNG trừ điểm nếu các phần (Mở bài/Thân bài/Kết bài) ngắn hơn mức chuẩn mực. CHỈ TRỪ ĐIỂM NẶNG khi TỔNG SỐ KÝ TỰ CỦA CẢ BÀI VIẾT không nằm trong khoảng "Yêu cầu độ dài" được quy định ở bên dưới (từ minWords đến maxWords).
+                  
+                  PHẦN NHẬN XÉT (Hãy trình bày thật chi tiết vào trường 'analysis' của file JSON):
+                  - Cung cấp điểm số cho từng tiêu chí trong 4 tiêu chí trên.
+                  - Nhận xét cụ thể về điểm mạnh và điểm yếu.
+                  - Gợi ý cách cải thiện.
+                  - Cuối phần nhận xét, BẮT BUỘC thêm dòng: "Quá trình viết - nhận phản hồi - sửa - viết lại này mô phỏng việc học với giáo viên riêng, giúp bạn tiến bộ nhanh hơn nhiều so với luyện viết một mình."
+                  """
                 : "Đánh giá dựa trên tiêu chuẩn dịch thuật chính xác, cách diễn đạt tự nhiên và sử dụng đúng văn phong lịch sự (-아요/어요 hoặc -습니다/ㅂ니다).";
 
         if (blockContext != null && !blockContext.isBlank()) {
@@ -210,7 +228,7 @@ public class GeminiAiServiceImpl implements AiService {
             QUY TẮC CHẤM ĐIỂM NGHIÊM NGẶT:
             - Chấm điểm khắt khe! Những bài viết ở mức trung bình và có lỗi chỉ nên đạt từ 50-70 điểm.
             - Chỉ cho mức 90-100 điểm với bài viết xuất sắc, trôi chảy như người bản xứ, ngữ pháp hoàn hảo và trả lời đúng trọng tâm.
-            - Nếu bài làm của học sinh chỉ đơn thuần sao chép lại đề bài/yêu cầu mà không tự trả lời, vô nghĩa, hoặc hoàn toàn lạc đề, BẠN BẮT BUỘC PHẢI CHẤM 0 ĐIỂM.
+            - Nếu bài làm của học sinh chỉ đơn thuần sao chép lại đề bài/yêu cầu mà không tự trả lời, vô nghĩa, hoặc hoàn toàn lạc đề, sử dụng ngôn ngữ khác tiếng Hàn, BẠN BẮT BUỘC PHẢI CHẤM 0 ĐIỂM.
             - Ở trường 'corrected', BẮT BUỘC phải cung cấp một phiên bản hay hơn, cao cấp hơn và tự nhiên hơn (sử dụng từ vựng/ngữ pháp bản xứ), tuyệt đối KHÔNG ĐƯỢC trả về chuỗi giống hệt với bản gốc kể cả khi học sinh viết đúng.
             
             Bài làm của học sinh: "%s"
@@ -227,7 +245,7 @@ public class GeminiAiServiceImpl implements AiService {
               "score": Điểm số (số nguyên từ 0 đến 100),
               "performanceText": "Câu khích lệ ngắn gọn bằng Tiếng Việt (Ví dụ: 'Cố gắng lên!', 'Làm tốt lắm!')",
               "nativeNuance": "Giải thích ngắn gọn cách người Hàn bản xứ diễn đạt tự ngữ này tự nhiên hơn ra sao (Bằng Tiếng Việt)",
-              "analysis": "Nhận xét tổng quan ngắn gọn về bài trình bày (Bằng Tiếng Việt)",
+              "analysis": "Nhận xét tổng quan hoặc phân tích chi tiết (điểm từng tiêu chí, điểm mạnh/yếu, gợi ý) tùy theo yêu cầu của từng loại bài (Bằng Tiếng Việt)",
               "breakdowns": [
                  {
                    "type": "politeness|grammar|vocabulary", 

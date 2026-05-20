@@ -14,6 +14,7 @@ import edu.language.kbee.payload.request.LessonCompletionRequest;
 import edu.language.kbee.payload.response.LessonCompletionResponse;
 import edu.language.kbee.repository.LessonProgressRepository;
 import edu.language.kbee.repository.LessonRepository;
+import edu.language.kbee.repository.SubmissionRepository;
 import edu.language.kbee.repository.UnitRepository;
 import edu.language.kbee.service.LessonService;
 import edu.language.kbee.service.UserActivityService;
@@ -46,6 +47,7 @@ public class LessonServiceImpl implements LessonService {
     private final AuthUtil authUtil;
     private final UserActivityService userActivityService;
     private final ObjectMapper objectMapper;
+    private final SubmissionRepository submissionRepository;
 
     @Override
     @Transactional
@@ -132,12 +134,47 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
         lesson.setTitle(dto.getTitle());
-        if (dto.getContent() != null) lesson.setContent(dto.getContent());
+
+        if (dto.getContent() != null && !dto.getContent().equals(lesson.getContent())) {
+            try {
+                Set<String> oldBlockIds = extractBlockIds(lesson.getContent());
+                Set<String> newBlockIds = extractBlockIds(dto.getContent());
+                
+                for (String oldId : oldBlockIds) {
+                    if (!newBlockIds.contains(oldId)) {
+                        if (submissionRepository.existsByLesson_LessonIdAndBlockId(lessonId, oldId)) {
+                            throw new BadRequestException("Có học viên nộp bài này, không thể xóa");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                if (e instanceof BadRequestException) {
+                    throw e;
+                }
+            }
+            lesson.setContent(dto.getContent());
+        }
         if (dto.getDurationMinutes() != null) lesson.setDurationMinutes(dto.getDurationMinutes());
         if (dto.getStatus() != null) lesson.setStatus(dto.getStatus());
 
         Lesson updatedLesson = lessonRepository.save(lesson);
         return mapToDto(updatedLesson);
+    }
+
+    private Set<String> extractBlockIds(String contentJson) {
+        Set<String> ids = new HashSet<>();
+        try {
+            if (contentJson == null || contentJson.isBlank()) return ids;
+            JsonNode blocks = objectMapper.readTree(contentJson);
+            if (blocks.isArray()) {
+                for (JsonNode block : blocks) {
+                    if (block.has("id")) {
+                        ids.add(block.get("id").asText());
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return ids;
     }
 
     @Override

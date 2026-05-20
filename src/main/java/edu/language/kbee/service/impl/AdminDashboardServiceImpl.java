@@ -39,7 +39,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         long totalCourses = courseRepository.count();
         BigDecimal totalRevenue = paymentTransactionRepository.calculateTotalRevenue();
 
-        // 1. Calculate Revenue Chart Data (This Year vs Last Year)
+        // Doanh thu năm ngoái và năm nay
         LocalDateTime now = LocalDateTime.now();
         int currentYear = now.getYear();
         int lastYear = currentYear - 1;
@@ -67,7 +67,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             }
         }
 
-        // 2. Calculate User Growth (This Week)
+        // Người dùng - Tuần này
         LocalDateTime startOfWeek = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay();
         LocalDateTime endOfWeek = LocalDate.now().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).atTime(LocalTime.MAX);
 

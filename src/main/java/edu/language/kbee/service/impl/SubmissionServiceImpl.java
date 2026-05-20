@@ -51,7 +51,9 @@ public class SubmissionServiceImpl implements SubmissionService {
             for (JsonNode block : blocks) {
                 if (block.path("id").asText().equals(request.getBlockId())) {
                     if (request.getSubmissionType().name().equals("ESSAY")) {
-                         blockContext = "Essay Title/Topic: " + block.path("title").asText() + "\nInstructions: " + block.path("instructions").asText();
+                         blockContext = "Essay Title/Topic: " + block.path("title").asText() + 
+                                        "\nInstructions: " + block.path("instructions").asText() +
+                                        "\nYêu cầu độ dài (BẮT BUỘC): Từ " + block.path("minWords").asText() + " đến " + block.path("maxWords").asText() + " ký tự.";
                     } else if (request.getSubmissionType().name().equals("TRANSLATION")) {
                          blockContext = "Câu cần dịch sang tiếng Hàn: " + block.path("english").asText();
                     }

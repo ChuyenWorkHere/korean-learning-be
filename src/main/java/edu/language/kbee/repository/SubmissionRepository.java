@@ -15,4 +15,6 @@ public interface SubmissionRepository extends JpaRepository<StudentSubmission, S
 
     List<StudentSubmission> findByUser_UserIdOrderByCreatedDateDesc(String userId);
 
+    boolean existsByLesson_LessonIdAndBlockId(String lessonId, String blockId);
+
 }

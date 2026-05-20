@@ -2,6 +2,8 @@ package edu.language.kbee.repository;
 
 import edu.language.kbee.enums.CourseStatus;
 import edu.language.kbee.model.Course;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,9 @@ import java.util.List;
 public interface CourseRepository extends JpaRepository<Course, String> {
 
     List<Course> findAllByStatus(CourseStatus status);
+
+    // Phân trang
+    Page<Course> findAll(Pageable pageable);
 
     @Query("SELECT c.courseId, COUNT(DISTINCT u.unitId) FROM Course c LEFT JOIN c.units u WHERE c.courseId IN :courseIds GROUP BY c.courseId")
     List<Object[]> countTotalUnitsByCourseIds(@Param("courseIds") List<String> courseIds);

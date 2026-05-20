@@ -42,35 +42,31 @@ public class StudyServiceImpl implements StudyService {
         FlashcardDeck deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
 
-        // 1. Get all cards in the deck
         List<Flashcard> allCards = flashcardRepository.findByDeck(deck);
 
-        // 2. Get cards the user has already started studying and are due now
+        // Thẻ người dùng đang học và đến hạn
         List<FlashcardProgress> dueProgresses = progressRepository.findDueCardsForUserAndDeck(user, deck, LocalDateTime.now());
         List<String> dueCardIds = dueProgresses.stream()
                 .map(p -> p.getFlashcard().getCardId())
                 .toList();
 
-        // 3. Find completely new cards (cards without any progress record)
+        // Tìm thẻ mới chưa học
         List<String> cardsWithProgress = progressRepository.findCardIdsWithProgress(user, deck);
         List<Flashcard> newCards = new ArrayList<>();
         for (Flashcard card : allCards) {
-            // If it has NO progress record at all
             if (!cardsWithProgress.contains(card.getCardId())) {
                 newCards.add(card);
             }
         }
 
-        // 4. Combine Due cards + New cards (Limit to maximum 20 cards per study session for performance)
+        // Hợp card mới + card cần ôn
         List<Flashcard> cardsToStudy = new ArrayList<>();
-        
-        // Add due cards first
+
         for (FlashcardProgress p : dueProgresses) {
             cardsToStudy.add(p.getFlashcard());
             if (cardsToStudy.size() >= 20) break;
         }
         
-        // Add new cards if there's still room
         for (Flashcard card : newCards) {
             if (cardsToStudy.size() >= 20) break;
             cardsToStudy.add(card);
@@ -100,27 +96,26 @@ public class StudyServiceImpl implements StudyService {
         int score = request.getScore(); // 0=Forgot, 1=Hard, 2=Good, 3=Easy
         int currentBox = progress.getBoxLevel();
         
-        // Leitner System Implementation
+
         if (score == 0) {
-            // Forgot: Reset to Box 1
+            // Khó nên box thành 1
             progress.setBoxLevel(1);
             progress.setConsecutiveCorrectAnswers(0);
-            // Review again in 5 minutes
+            // ần ôn 5 phutsts
             progress.setNextReviewDate(LocalDateTime.now().plusMinutes(5));
         } else {
             progress.setConsecutiveCorrectAnswers(progress.getConsecutiveCorrectAnswers() + 1);
-            
-            // Advance Box based on score
-            if (score == 3) { // Easy - skips a box
+
+            if (score == 3) { // Easy - thêm 2 box
                 progress.setBoxLevel(Math.min(7, currentBox + 2));
-            } else if (score == 2) { // Good - advances 1 box
+            } else if (score == 2) { // Good - thêm 1 box
                 progress.setBoxLevel(Math.min(7, currentBox + 1));
-            } else { // Hard - stays in same box
+            } else { // Hard - giữ nguyên
                 progress.setBoxLevel(currentBox);
             }
 
-            // Calculate next review based on Box Level
-            // Box 1: 1 day, Box 2: 3 days, Box 3: 7 days, Box 4: 14 days, Box 5: 30 days, Box 6: 60 days, Box 7: 120 days
+            // Tính ngày ôn tập
+            // Box 1: 1, Box 2: 3 , Box 3: 7, Box 4: 14, Box 5: 30, Box 6: 60, Box 7: 120
             int daysToAdd = 1;
             switch(progress.getBoxLevel()) {
                 case 1: daysToAdd = 1; break;

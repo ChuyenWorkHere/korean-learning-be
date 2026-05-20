@@ -5,11 +5,10 @@ import edu.language.kbee.payload.request.DeckRequest;
 import edu.language.kbee.service.FlashcardDeckService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/decks")
@@ -19,13 +18,17 @@ public class FlashcardDeckController {
     private final FlashcardDeckService deckService;
 
     @GetMapping("/my-decks")
-    public ResponseEntity<List<FlashcardDeckDto>> getMyDecks() {
-        return ResponseEntity.ok(deckService.getMyDecks());
+    public ResponseEntity<Page<FlashcardDeckDto>> getMyDecks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        return ResponseEntity.ok(deckService.getMyDecks(page, size));
     }
 
     @GetMapping("/public")
-    public ResponseEntity<List<FlashcardDeckDto>> getPublicDecks() {
-        return ResponseEntity.ok(deckService.getPublicDecks());
+    public ResponseEntity<Page<FlashcardDeckDto>> getPublicDecks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        return ResponseEntity.ok(deckService.getPublicDecks(page, size));
     }
 
     @GetMapping("/{deckId}")

@@ -13,6 +13,10 @@ import edu.language.kbee.service.FlashcardDeckService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +69,43 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<FlashcardDeckDto> getMyDecks(int page, int size) {
+        User user = authUtil.getLoggedInUser();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<FlashcardDeck> decks = deckRepository.findByUser(user, pageable);
+        return decks.map(deck -> {
+            FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
+            Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(user, deck);
+            dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
+            return dto;
+        });
+    }
+
+    @Override
+    public Page<FlashcardDeckDto> getPublicDecks(int page, int size) {
+        User user = null;
+        try {
+            user = authUtil.getLoggedInUser();
+        } catch (Exception e) {
+            // Ignore if no user is logged in
+        }
+
+        final User finalUser = user;
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<FlashcardDeck> decks = deckRepository.findByIsPublicTrue(pageable);
+        return decks.map(deck -> {
+            FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
+            if (finalUser != null) {
+                Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(finalUser, deck);
+                dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
+            } else {
+                dto.setLearnedCount(0L);
+            }
+            return dto;
+        });
     }
 
     @Override
