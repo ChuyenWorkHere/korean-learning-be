@@ -11,6 +11,10 @@ import edu.language.kbee.repository.UserCourseRepository;
 import edu.language.kbee.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +68,39 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<CourseDto> getUserCourses() {
         return List.of();
+    }
+
+    @Override
+    @Transactional
+    public Page<CourseDto> getAllCourses(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<Course> coursePage = courseRepository.findAll(pageable);
+
+        if (coursePage.isEmpty()) {
+            return coursePage.map(c -> modelMapper.map(c, CourseDto.class));
+        }
+
+        List<String> courseIds = coursePage.getContent().stream().map(Course::getCourseId).toList();
+
+        List<Object[]> totalEnrollment = userCourseRepository.countEnrollmentByCourseIds(courseIds);
+        Map<String, Long> enrollmentMap = totalEnrollment.stream()
+                .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+
+        List<Object[]> totalUnitsData = courseRepository.countTotalUnitsByCourseIds(courseIds);
+        Map<String, Long> unitsMap = totalUnitsData.stream()
+                .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+
+        List<Object[]> totalLessonsData = courseRepository.countTotalLessonsByCourseIds(courseIds);
+        Map<String, Long> lessonsMap = totalLessonsData.stream()
+                .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+
+        return coursePage.map(course -> {
+            CourseDto temp = modelMapper.map(course, CourseDto.class);
+            temp.setTotalUnits(Math.toIntExact(unitsMap.getOrDefault(course.getCourseId(), 0L)));
+            temp.setTotalLessons(Math.toIntExact(lessonsMap.getOrDefault(course.getCourseId(), 0L)));
+            temp.setTotalEnrollment(Math.toIntExact(enrollmentMap.getOrDefault(course.getCourseId(), 0L)));
+            return temp;
+        });
     }
 
     @Override

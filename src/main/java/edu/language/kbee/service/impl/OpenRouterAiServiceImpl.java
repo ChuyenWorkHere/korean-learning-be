@@ -64,7 +64,25 @@ public class OpenRouterAiServiceImpl implements AiService {
     @Override
     public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
         String context = taskType.equalsIgnoreCase("ESSAY")
-                ? "Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết (sử dụng đuôi câu trang trọng -는다/다, mạch văn logic, từ vựng cao cấp, cách giãn cách từ chính xác)."
+                ? """
+                  Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết. BẮT BUỘC chấm điểm theo 4 tiêu chí sau:
+                  (1) Nội dung và hoàn thành nhiệm vụ: Trả lời đúng yêu cầu đề bài, lập luận thuyết phục.
+                  (2) Tổ chức và mạch lạc: Cấu trúc 3 phần (Mở bài, Thân bài, Kết bài) rõ ràng, các đoạn liên kết logic.
+                  (3) Sử dụng từ vựng: Từ vựng đa dạng, phù hợp trình độ cao cấp.
+                  (4) Chính xác ngữ pháp: Ngữ pháp chính xác, sử dụng được cấu trúc nâng cao.
+                  
+                  YÊU CẦU VỀ CẤU TRÚC (KHUYẾN NGHỊ):
+                  - Mở bài (서론): nên có, giới thiệu chủ đề và nêu quan điểm.
+                  - Thân bài (본론): nên trình bày 2-3 luận điểm với dẫn chứng cụ thể. (Điểm cộng lớn nếu trình bày được mặt đối lập rồi phản bác).
+                  - Kết bài (결론): nên có, tóm tắt quan điểm và kết luận.
+                  - CHÚ Ý QUAN TRỌNG VỀ ĐỘ DÀI: Hãy đếm TỔNG số lượng ký tự của toàn bộ bài viết (không tính khoảng trắng). KHÔNG trừ điểm nếu các phần (Mở bài/Thân bài/Kết bài) ngắn hơn mức chuẩn mực. CHỈ TRỪ ĐIỂM NẶNG khi TỔNG SỐ KÝ TỰ CỦA CẢ BÀI VIẾT không nằm trong khoảng "Yêu cầu độ dài" được quy định ở bên dưới (từ minWords đến maxWords).
+                  
+                  PHẦN NHẬN XÉT (Hãy trình bày thật chi tiết vào trường 'analysis' của file JSON):
+                  - Cung cấp điểm số cho từng tiêu chí trong 4 tiêu chí trên.
+                  - Nhận xét cụ thể về điểm mạnh và điểm yếu.
+                  - Gợi ý cách cải thiện.
+                  - Cuối phần nhận xét, BẮT BUỘC thêm dòng: "Quá trình viết - nhận phản hồi - sửa - viết lại này mô phỏng việc học với giáo viên riêng, giúp bạn tiến bộ nhanh hơn nhiều so với luyện viết một mình."
+                  """
                 : "Đánh giá dựa trên tiêu chuẩn dịch thuật chính xác, cách diễn đạt tự nhiên và sử dụng đúng văn phong lịch sự (-아요/어요 hoặc -습니다/ㅂ니다).";
 
         if (blockContext != null && !blockContext.isBlank()) {
@@ -95,7 +113,7 @@ public class OpenRouterAiServiceImpl implements AiService {
               "score": Điểm số (số nguyên từ 0 đến 100),
               "performanceText": "Câu khích lệ ngắn gọn bằng Tiếng Việt (Ví dụ: 'Cố gắng lên!', 'Làm tốt lắm!')",
               "nativeNuance": "Giải thích ngắn gọn cách người Hàn bản xứ diễn đạt tự ngữ này tự nhiên hơn ra sao (Bằng Tiếng Việt)",
-              "analysis": "Nhận xét tổng quan ngắn gọn về bài trình bày (Bằng Tiếng Việt)",
+              "analysis": "Nhận xét tổng quan hoặc phân tích chi tiết (điểm từng tiêu chí, điểm mạnh/yếu, gợi ý) tùy theo yêu cầu của từng loại bài (Bằng Tiếng Việt)",
               "breakdowns": [
                  {
                    "type": "politeness|grammar|vocabulary",

@@ -24,9 +24,10 @@ public class CourseController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<?> getAllCourses() {
-        List<CourseDto> courseDtos = courseService.getAllCourses();
-        return ResponseEntity.ok(courseDtos);
+    public ResponseEntity<?> getAllCourses(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size) {
+        return ResponseEntity.ok(courseService.getAllCourses(page, size));
     }
 
     @GetMapping("/my-courses")
