@@ -1,5 +1,6 @@
 package edu.language.kbee.service.impl;
 
+import edu.language.kbee.enums.XpSourceType;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.model.Flashcard;
 import edu.language.kbee.model.FlashcardDeck;
@@ -7,11 +8,13 @@ import edu.language.kbee.model.FlashcardProgress;
 import edu.language.kbee.model.User;
 import edu.language.kbee.payload.FlashcardDto;
 import edu.language.kbee.payload.request.StudyResultRequest;
+import edu.language.kbee.payload.response.StudyResultResponse;
 import edu.language.kbee.repository.FlashcardDeckRepository;
 import edu.language.kbee.repository.FlashcardProgressRepository;
 import edu.language.kbee.repository.FlashcardRepository;
 import edu.language.kbee.service.StudyService;
 import edu.language.kbee.service.UserActivityService;
+import edu.language.kbee.service.XpService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -34,6 +37,7 @@ public class StudyServiceImpl implements StudyService {
     private final AuthUtil authUtil;
     private final ModelMapper mapper;
     private final UserActivityService userActivityService;
+    private final XpService xpService;
 
     @Override
     @Transactional
@@ -79,12 +83,15 @@ public class StudyServiceImpl implements StudyService {
 
     @Override
     @Transactional
-    public void recordStudyResult(StudyResultRequest request) {
+    public StudyResultResponse recordStudyResult(StudyResultRequest request) {
         User user = authUtil.getLoggedInUser();
         Flashcard card = flashcardRepository.findById(request.getCardId())
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
 
-        FlashcardProgress progress = progressRepository.findByUserAndFlashcard(user, card)
+        var existingProgress = progressRepository.findByUserAndFlashcard(user, card);
+        boolean isNewCardProgress = existingProgress.isEmpty();
+
+        FlashcardProgress progress = existingProgress
                 .orElse(FlashcardProgress.builder()
                         .user(user)
                         .flashcard(card)
@@ -132,5 +139,14 @@ public class StudyServiceImpl implements StudyService {
 
         progressRepository.save(progress);
         userActivityService.recordActivity(user.getUserId());
+
+        var xpAward = isNewCardProgress && score > 0
+                ? xpService.awardXp(user.getUserId(), XpSourceType.VOCABULARY_LEARNED, card.getCardId(), 5, "Học từ vựng mới")
+                : xpService.awardXp(user.getUserId(), XpSourceType.VOCABULARY_LEARNED, card.getCardId(), 0, "Không cộng XP");
+
+        return StudyResultResponse.builder()
+                .message("Study result recorded successfully")
+                .xpAward(xpAward)
+                .build();
     }
 }

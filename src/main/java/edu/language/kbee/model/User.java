@@ -56,6 +56,15 @@ public class User extends DateAuditing {
     private byte isPremium = 0;
 
     private LocalDate premiumExpiryDate;
+
+    @Builder.Default
+    @Column(name = "total_xp", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int totalXp = 0;
+
+    @Builder.Default
+    @Column(name = "level", nullable = false, columnDefinition = "INT DEFAULT 1")
+    private int level = 1;
+
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
@@ -79,4 +88,8 @@ public class User extends DateAuditing {
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FlashcardProgress> flashcardProgresses = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserXpEvent> xpEvents = new ArrayList<>();
 }

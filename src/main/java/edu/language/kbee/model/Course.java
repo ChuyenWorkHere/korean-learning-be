@@ -34,8 +34,8 @@ public class Course extends DateAuditing {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "icon_name", length = 50)
-    private String iconName = "GraduationCap";
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
 
     @NotNull(message = "Course level is required")
     @Enumerated(EnumType.STRING)

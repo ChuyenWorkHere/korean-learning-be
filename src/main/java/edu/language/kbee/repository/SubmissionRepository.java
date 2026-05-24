@@ -11,10 +11,10 @@ import java.util.Optional;
 @Repository
 public interface SubmissionRepository extends JpaRepository<StudentSubmission, String> {
 
-    Optional<StudentSubmission> findTop1ByLesson_LessonIdAndBlockIdAndUser_UserIdOrderByCreatedDateDesc(String lessonId, String blockId, String userId);
+    Optional<StudentSubmission> findTop1ByLesson_LessonIdAndBlock_BlockIdAndUser_UserIdOrderByCreatedDateDesc(String lessonId, String blockId, String userId);
 
     List<StudentSubmission> findByUser_UserIdOrderByCreatedDateDesc(String userId);
 
-    boolean existsByLesson_LessonIdAndBlockId(String lessonId, String blockId);
+    boolean existsByLesson_LessonIdAndBlock_BlockId(String lessonId, String blockId);
 
 }

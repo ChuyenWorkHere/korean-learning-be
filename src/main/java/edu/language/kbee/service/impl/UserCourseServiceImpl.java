@@ -44,6 +44,13 @@ public class UserCourseServiceImpl implements UserCourseService {
         Map<String, UserCourse> enrollmentMap = enrolledCourses.stream()
                 .collect(Collectors.toMap(uc -> uc.getCourse().getCourseId(), uc -> uc));
 
+        Map<String, Long> enrollmentCountMap = userCourseRepository.countEnrollmentByCourseIds(courseIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (String) row[0],
+                        row -> (Long) row[1]
+                ));
+
         Map<String, Long> totalLessonsMap = lessonRepository.countTotalPublishedLessonsByCourseIds(courseIds)
                 .stream()
                 .collect(Collectors.toMap(
@@ -64,6 +71,7 @@ public class UserCourseServiceImpl implements UserCourseService {
 
             int totalLessons = totalLessonsMap.getOrDefault(courseId, 0L).intValue();
             int completedLessons = completedLessonsMap.getOrDefault(courseId, 0L).intValue();
+            int totalEnrollment = enrollmentCountMap.getOrDefault(courseId, 0L).intValue();
 
             int progressPercent = (totalLessons == 0) ? 0 : (completedLessons * 100) / totalLessons;
 
@@ -73,6 +81,7 @@ public class UserCourseServiceImpl implements UserCourseService {
                 dto.setProgress(progressPercent);
                 dto.setCompletedLessons(completedLessons);
                 dto.setTotalLessons(totalLessons);
+                dto.setTotalEnrollment(totalEnrollment);
                 dto.setIsLocked(false);
                 return dto;
             } else {
@@ -80,11 +89,12 @@ public class UserCourseServiceImpl implements UserCourseService {
                         .courseId(course.getCourseId())
                         .title(course.getTitle())
                         .description(course.getDescription())
-                        .iconName(course.getIconName())
+                        .imageUrl(course.getImageUrl())
                         .courseLevel(course.getLevel())
                         .progress(0)
                         .completedLessons(0)
                         .totalLessons(totalLessons)
+                        .totalEnrollment(totalEnrollment)
                         .isLocked(false)
                         .isEnrolled(false)
                         .build();
@@ -114,10 +124,18 @@ public class UserCourseServiceImpl implements UserCourseService {
                         row -> (Long) row[1]      // count
                 ));
 
+        Map<String, Long> enrollmentCountMap = userCourseRepository.countEnrollmentByCourseIds(List.of(courseId))
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (String) row[0],
+                        row -> (Long) row[1]
+                ));
+
         UserCourse enrolledCourse = userCourseRepository.findByUser_UserIdAndCourse_CourseId(currentUserId, courseId);
 
         int totalLessons = totalLessonsMap.getOrDefault(courseId, 0L).intValue();
         int completedLessons = completedLessonsMap.getOrDefault(courseId, 0L).intValue();
+        int totalEnrollment = enrollmentCountMap.getOrDefault(courseId, 0L).intValue();
 
         int progressPercent = (totalLessons == 0) ? 0 : (completedLessons * 100) / totalLessons;
 
@@ -134,6 +152,7 @@ public class UserCourseServiceImpl implements UserCourseService {
             dto.setProgress(progressPercent);
             dto.setCompletedLessons(completedLessons);
             dto.setTotalLessons(totalLessons);
+            dto.setTotalEnrollment(totalEnrollment);
             dto.setIsLocked(false);
             return dto;
         } else {
@@ -142,6 +161,7 @@ public class UserCourseServiceImpl implements UserCourseService {
             dto.setProgress(progressPercent);
             dto.setCompletedLessons(completedLessons);
             dto.setTotalLessons(totalLessons);
+            dto.setTotalEnrollment(totalEnrollment);
             dto.setIsLocked(false);
             return dto;
         }
@@ -174,7 +194,7 @@ public class UserCourseServiceImpl implements UserCourseService {
                 .courseId(userCourse.getCourse().getCourseId())
                 .title(userCourse.getCourse().getTitle())
                 .description(userCourse.getCourse().getDescription())
-                .iconName(userCourse.getCourse().getIconName())
+                .imageUrl(userCourse.getCourse().getImageUrl())
                 .courseLevel(userCourse.getCourse().getLevel())
                 .build();
     }

@@ -19,4 +19,5 @@ public class LessonCompletionResponse {
     private Integer correctCount;
     private Integer totalCount;
     private Map<String, Boolean> results; // questionId -> isCorrect
+    private XpAwardResponse xpAward;
 }
