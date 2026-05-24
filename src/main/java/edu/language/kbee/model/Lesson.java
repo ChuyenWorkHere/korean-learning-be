@@ -9,8 +9,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +37,6 @@ public class Lesson extends DateAuditing {
     @Column(nullable = false, length = 20)
     private LessonType type;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "json")
-    private String content;
-
     @NotNull(message = "Order index is required")
     @Min(value = 0, message = "Order index cannot be negative")
     @Column(name = "order_index", nullable = false)
@@ -64,5 +58,10 @@ public class Lesson extends DateAuditing {
     @Builder.Default
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonProgress> studentProgresses = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
+    private List<LessonBlock> blocks = new ArrayList<>();
 
 }

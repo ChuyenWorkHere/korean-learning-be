@@ -12,11 +12,12 @@ public class UserCourseDto {
     private String courseId;
     private String title;
     private String description;
-    private String iconName;
+    private String imageUrl;
     private CourseLevel courseLevel;
     private Integer progress;
     private Integer completedLessons;
     private Integer totalLessons;
+    private Integer totalEnrollment;
     private Boolean isLocked;
     private Boolean isEnrolled;
 }

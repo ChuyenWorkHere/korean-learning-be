@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -43,6 +44,13 @@ public class LessonController {
     public ResponseEntity<LessonDto> updateLesson(@PathVariable String lessonId,
                                                   @Valid @RequestBody LessonDto lessonDto) {
         return ResponseEntity.ok(lessonService.updateLesson(lessonId, lessonDto));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/lessons/{lessonId}/blocks")
+    public ResponseEntity<LessonDto> updateLessonBlocks(@PathVariable String lessonId,
+                                                        @RequestBody List<Map<String, Object>> blocks) {
+        return ResponseEntity.ok(lessonService.updateLessonBlocks(lessonId, blocks));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

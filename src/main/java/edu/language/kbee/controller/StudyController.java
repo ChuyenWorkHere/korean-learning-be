@@ -2,6 +2,7 @@ package edu.language.kbee.controller;
 
 import edu.language.kbee.payload.FlashcardDto;
 import edu.language.kbee.payload.request.StudyResultRequest;
+import edu.language.kbee.payload.response.StudyResultResponse;
 import edu.language.kbee.service.StudyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,7 @@ public class StudyController {
     }
 
     @PostMapping("/result")
-    public ResponseEntity<String> recordStudyResult(@Valid @RequestBody StudyResultRequest request) {
-        studyService.recordStudyResult(request);
-        return ResponseEntity.ok("Study result recorded successfully");
+    public ResponseEntity<StudyResultResponse> recordStudyResult(@Valid @RequestBody StudyResultRequest request) {
+        return ResponseEntity.ok(studyService.recordStudyResult(request));
     }
 }

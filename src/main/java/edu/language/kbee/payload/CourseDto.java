@@ -1,6 +1,7 @@
 package edu.language.kbee.payload;
 
 import lombok.*;
+import jakarta.validation.constraints.Size;
 
 @Getter
 @Setter
@@ -15,7 +16,8 @@ public class CourseDto {
 
     private String description;
 
-    private String iconName;
+    @Size(max = 1000, message = "Image URL must not exceed 1000 characters")
+    private String imageUrl;
 
     private String level;
 

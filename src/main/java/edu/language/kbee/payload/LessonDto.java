@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.util.List;
+import java.util.Map;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +26,7 @@ public class LessonDto {
     @NotNull(message = "Lesson type is required")
     private LessonType type;
 
-    private String content;
+    private List<Map<String, Object>> blocks;
 
     private Integer orderIndex;
 

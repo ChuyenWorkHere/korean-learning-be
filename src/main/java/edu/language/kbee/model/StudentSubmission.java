@@ -30,8 +30,9 @@ public class StudentSubmission extends DateAuditing {
     @JoinColumn(name = "lesson_id", nullable = false)
     private Lesson lesson;
 
-    @Column(name = "block_id", nullable = false)
-    private String blockId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "block_id", nullable = false)
+    private LessonBlock block;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "submission_type", nullable = false)

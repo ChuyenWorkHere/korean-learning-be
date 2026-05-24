@@ -129,8 +129,8 @@ public class CourseServiceImpl implements CourseService {
         if (courseDto.getDescription() != null) {
             course.setDescription(courseDto.getDescription());
         }
-        if (courseDto.getIconName() != null) {
-            course.setIconName(courseDto.getIconName());
+        if (courseDto.getImageUrl() != null) {
+            course.setImageUrl(courseDto.getImageUrl().isBlank() ? null : courseDto.getImageUrl());
         }
         if (courseDto.getLevel() != null) {
             course.setLevel(CourseLevel.valueOf(courseDto.getLevel()));
