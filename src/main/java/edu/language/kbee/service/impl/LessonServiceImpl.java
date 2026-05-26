@@ -301,6 +301,11 @@ public class LessonServiceImpl implements LessonService {
                                 results.put(answerKey, isCorrect);
                             }
                         }
+                    } else if (block.getBlockType() == LessonBlockType.WORKSHEET) {
+                        WorksheetGrade worksheetGrade = gradeWorksheetBlock(block, request.getAnswers());
+                        totalCount += worksheetGrade.totalCount();
+                        correctCount += worksheetGrade.correctCount();
+                        results.putAll(worksheetGrade.results());
                     }
                 }
             } catch (Exception e) {
@@ -419,6 +424,7 @@ public class LessonServiceImpl implements LessonService {
         lesson.getBlocks().removeIf(block -> !incomingBlockIds.contains(block.getBlockId()));
 
         int index = 0;
+        Set<String> incomingOptionIds = new HashSet<>();
         for (JsonNode blockNode : blocks) {
             String blockId = firstNonBlank(blockNode.path("id").asText(), UUID.randomUUID().toString());
             LessonBlock block = existingBlocks.get(blockId);
@@ -432,11 +438,11 @@ public class LessonServiceImpl implements LessonService {
                         .build();
                 lesson.getBlocks().add(block);
             }
-            populateLessonBlock(block, blockNode, index++);
+            populateLessonBlock(block, blockNode, index++, incomingOptionIds);
         }
     }
 
-    private void populateLessonBlock(LessonBlock block, JsonNode blockNode, int orderIndex) {
+    private void populateLessonBlock(LessonBlock block, JsonNode blockNode, int orderIndex, Set<String> incomingOptionIds) {
         LessonBlockType blockType = parseBlockType(blockNode.path("type").asText());
 
         block.setBlockType(blockType);
@@ -460,8 +466,13 @@ public class LessonServiceImpl implements LessonService {
             if (options.isArray()) {
                 int optionIndex = 0;
                 for (JsonNode optionNode : options) {
+                    String optionId = firstNonBlank(optionNode.path("id").asText(), UUID.randomUUID().toString());
+                    if (!incomingOptionIds.add(optionId)) {
+                        optionId = UUID.randomUUID().toString();
+                        incomingOptionIds.add(optionId);
+                    }
                     QuizOption option = QuizOption.builder()
-                            .optionId(firstNonBlank(optionNode.path("id").asText(), UUID.randomUUID().toString()))
+                            .optionId(optionId)
                             .question(question)
                             .optionText(readText(optionNode, "text"))
                             .correct(optionNode.path("isCorrect").asBoolean())
@@ -592,5 +603,71 @@ public class LessonServiceImpl implements LessonService {
             answers.add(matcher.group(1).trim());
         }
         return String.join(",", answers);
+    }
+
+    private WorksheetGrade gradeWorksheetBlock(LessonBlock block, Map<String, String> answers) {
+        int total = 0;
+        int correct = 0;
+        Map<String, Boolean> results = new LinkedHashMap<>();
+        if (block.getMetadataJson() == null || block.getMetadataJson().isBlank()) {
+            return new WorksheetGrade(0, 0, results);
+        }
+
+        JsonNode metadata = objectMapper.readTree(block.getMetadataJson());
+        JsonNode items = metadata.path("items");
+        if (!items.isArray()) {
+            return new WorksheetGrade(0, 0, results);
+        }
+
+        for (JsonNode item : items) {
+            String itemId = firstNonBlank(item.path("id").asText(), UUID.randomUUID().toString());
+            String type = firstNonBlank(item.path("type").asText(), "text").toLowerCase();
+
+            if ("multi_text".equals(type)) {
+                JsonNode blanks = item.path("blanks");
+                if (!blanks.isArray()) continue;
+                for (JsonNode blank : blanks) {
+                    String blankId = firstNonBlank(blank.path("id").asText(), UUID.randomUUID().toString());
+                    String answerKey = block.getBlockId() + ":" + itemId + ":" + blankId;
+                    boolean isCorrect = isAnswerCorrect(answers.get(answerKey), blank);
+                    total++;
+                    if (isCorrect) correct++;
+                    results.put(answerKey, isCorrect);
+                }
+            } else {
+                String answerKey = block.getBlockId() + ":" + itemId;
+                boolean isCorrect = isAnswerCorrect(answers.get(answerKey), item);
+                total++;
+                if (isCorrect) correct++;
+                results.put(answerKey, isCorrect);
+            }
+        }
+
+        return new WorksheetGrade(total, correct, results);
+    }
+
+    private boolean isAnswerCorrect(String userAnswer, JsonNode answerNode) {
+        String normalizedUserAnswer = normalizeAnswer(userAnswer);
+        if (normalizedUserAnswer.isBlank()) return false;
+
+        JsonNode answers = answerNode.path("answers");
+        if (answers.isArray()) {
+            for (JsonNode expected : answers) {
+                if (normalizedUserAnswer.equals(normalizeAnswer(expected.asText()))) {
+                    return true;
+                }
+            }
+        }
+
+        JsonNode answer = answerNode.path("answer");
+        return !answer.isMissingNode() && normalizedUserAnswer.equals(normalizeAnswer(answer.asText()));
+    }
+
+    private String normalizeAnswer(String value) {
+        if (value == null) return "";
+        return value.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    private record WorksheetGrade(int totalCount, int correctCount, Map<String, Boolean> results) {
     }
 }
