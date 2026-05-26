@@ -20,5 +20,6 @@ public enum LessonBlockType {
     VOCAB,
     ROLEPLAY_SETUP,
     DIALOGUE_SEQUENCE,
-    PRONUNCIATION
+    PRONUNCIATION,
+    WORKSHEET
 }
