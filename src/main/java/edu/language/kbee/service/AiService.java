@@ -13,6 +13,8 @@ public interface AiService {
 
     JsonNode generateQuizzes(String context, String skillType) throws Exception;
 
+    JsonNode generateGrammarLesson(String grammarPoint, String level) throws Exception;
+
     JsonNode splitSubtitleWithAI(String rawSubtitleText) throws Exception;
 
     JsonNode extractVocabulary(String content) throws Exception;

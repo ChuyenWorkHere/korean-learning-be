@@ -164,23 +164,32 @@ public class GeminiAiServiceImpl implements AiService {
     public JsonNode generateQuizzes(String context, String skillType) {
         String url = baseUrl + apiKey;
 
-        String promptContext = "";
-        switch (skillType.toLowerCase()) {
+        String lowerSkillType = skillType == null ? "general" : skillType.toLowerCase();
+        String quizInstruction;
+        switch (lowerSkillType) {
             case "grammar":
-                promptContext = "phần lý thuyết ngữ pháp sau: " + context;
+                quizInstruction = """
+                    Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa vào phần lý thuyết ngữ pháp sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm tập trung vào DỊCH Việt-Hàn hoặc Hàn-Việt.
+                    YÊU CẦU RIÊNG CHO QUIZ NGỮ PHÁP:
+                    - Mỗi câu phải kiểm tra việc dùng đúng cấu trúc ngữ pháp trong ngữ cảnh dịch.
+                    - Ưu tiên dạng: "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?" hoặc "Câu tiếng Hàn sau nghĩa là gì?".
+                    - Không hỏi định nghĩa lan man, không hỏi mẹo lý thuyết thuần túy nếu không gắn với câu dịch.
+                    - Các đáp án sai phải là lỗi thường gặp về chia đuôi, tiểu từ, trật tự từ, mức lịch sự hoặc dùng sai cấu trúc.
+                    - Giải thích phải chỉ rõ vì sao bản dịch đúng và lỗi của các lựa chọn gây nhiễu.
+                    NỘI DUNG NGỮ PHÁP:
+                    """ + context;
                 break;
             case "listening":
-                promptContext = "transcript của bài nghe sau: " + context;
+                quizInstruction = "Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa trực tiếp vào transcript của bài nghe sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết nghe được hoặc suy luận gần từ transcript. TRANSCRIPT:\n" + context;
                 break;
             case "reading":
-                promptContext = "đoạn văn bản sau: " + context;
+                quizInstruction = "Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa trực tiếp vào đoạn đọc sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết, từ vựng trong ngữ cảnh hoặc suy luận từ bài đọc. ĐOẠN ĐỌC:\n" + context;
                 break;
             default:
-                promptContext = "nội dung sau: " + context;
+                quizInstruction = "Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
         }
 
-        String systemPrompt = "Bạn là chuyên gia giảng dạy tiếng Hàn. Dựa vào " + promptContext + ", " +
-                "hãy tạo chính xác 3 câu hỏi trắc nghiệm tiếng Hàn/tiếng Việt." +
+        String systemPrompt = quizInstruction +
                 "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG 3 OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
                 "{\n" +
                 "  \"question\": \"Nội dung câu hỏi?\",\n" +
@@ -347,6 +356,70 @@ public class GeminiAiServiceImpl implements AiService {
 
         String response = restTemplate.postForObject(url, request, String.class);
 
+        JsonNode rootNode = objectMapper.readTree(response);
+        String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+
+        aiResponseText = cleanAiResponse(aiResponseText);
+
+        return objectMapper.readTree(aiResponseText);
+    }
+
+    @Override
+    public JsonNode generateGrammarLesson(String grammarPoint, String level) throws Exception {
+        String url = baseUrl + apiKey;
+
+        String systemPrompt = """
+            Bạn là giáo viên tiếng Hàn chuyên thiết kế bài học ngữ pháp cho người Việt.
+            Tạo một bài học ngữ pháp tiếng Hàn ngắn gọn, đúng trọng tâm.
+
+            CHỦ ĐIỂM NGỮ PHÁP: %s
+            TRÌNH ĐỘ: %s
+
+            YÊU CẦU NỘI DUNG:
+            - Không lan man, không nói kiến thức ngoài chủ điểm.
+            - Giải thích bằng tiếng Việt dễ hiểu, phù hợp trình độ.
+            - Nếu có tiếng Hàn, phải tự nhiên và đúng ngữ pháp.
+            - Phần mô tả chỉ 1 đoạn 2-4 câu.
+            - Phần lưu ý có 3-5 ý, mỗi ý 1 câu ngắn.
+            - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
+            - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
+
+            CHỈ TRẢ VỀ JSON OBJECT THUẦN TÚY theo cấu trúc:
+            {
+              "title": "Tên bài học ngắn gọn, ví dụ: 입니다",
+              "description": "Đoạn tổng quan lý thuyết bằng tiếng Việt.",
+              "structure": "Công thức ngắn, ví dụ: N + 입니다",
+              "meaning": "Ý nghĩa ngắn, ví dụ: Là ... / Tôi là ... / Đây là ...",
+              "usageNotes": [
+                "Lưu ý 1",
+                "Lưu ý 2",
+                "Lưu ý 3"
+              ],
+              "examples": [
+                {
+                  "base": "학생",
+                  "sentence": "저는 학생입니다.",
+                  "meaning": "Tôi là học sinh."
+                }
+              ]
+            }
+            """.formatted(grammarPoint, level);
+
+        Map<String, Object> textPart = new HashMap<>();
+        textPart.put("text", systemPrompt);
+
+        Map<String, Object> parts = new HashMap<>();
+        parts.put("parts", List.of(textPart));
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("contents", List.of(parts));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+        String response = restTemplate.postForObject(url, request, String.class);
         JsonNode rootNode = objectMapper.readTree(response);
         String aiResponseText = rootNode.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
 
