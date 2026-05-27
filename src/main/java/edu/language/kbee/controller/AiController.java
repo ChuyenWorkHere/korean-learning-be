@@ -57,6 +57,23 @@ public class AiController {
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/generate-grammar-lesson")
+    public ResponseEntity<?> generateGrammarLesson(@RequestBody Map<String, String> payload) {
+        try {
+            String grammarPoint = payload.get("grammarPoint");
+            String level = payload.getOrDefault("level", "beginner");
+
+            if (grammarPoint == null || grammarPoint.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Grammar point is required"));
+            }
+
+            return ResponseEntity.ok(openRouterAi.generateGrammarLesson(grammarPoint, level));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/extract-vocabulary")
     public ResponseEntity<?> extractVocabulary(@RequestBody Map<String, String> payload) {
         try {
