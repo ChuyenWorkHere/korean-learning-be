@@ -1,11 +1,12 @@
 package edu.language.kbee.service.impl;
 
 import edu.language.kbee.service.AiService;
+import edu.language.kbee.service.ai.AiResponseParser;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,8 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Primary
+
 @Service
+@ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "gemini")
 @RequiredArgsConstructor
 public class GeminiAiServiceImpl implements AiService {
 
@@ -429,6 +431,6 @@ public class GeminiAiServiceImpl implements AiService {
     }
 
     private String cleanAiResponse(String response) {
-        return response.replaceAll("(?s)^```json\\s*", "").replaceAll("(?s)\\s*```$", "").trim();
+        return AiResponseParser.extractJson(response);
     }
 }

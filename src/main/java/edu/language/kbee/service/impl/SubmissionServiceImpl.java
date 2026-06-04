@@ -30,7 +30,7 @@ import tools.jackson.databind.ObjectMapper;
 public class SubmissionServiceImpl implements SubmissionService {
 
     private final SubmissionRepository submissionRepository;
-    private final AiService geminiAiService;
+    private final AiService aiService;
     private final LessonRepository lessonRepository;
     private final LessonBlockRepository lessonBlockRepository;
     private final WritingTaskRepository writingTaskRepository;
@@ -49,7 +49,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         String blockContext = buildWritingContext(block.getBlockId(), request.getSubmissionType());
 
         try {
-            feedbackNode = geminiAiService.gradeWritingSubmission(
+            feedbackNode = aiService.gradeWritingSubmission(
                     request.getSubmittedContent(),
                     request.getSubmissionType().name(),
                     blockContext
