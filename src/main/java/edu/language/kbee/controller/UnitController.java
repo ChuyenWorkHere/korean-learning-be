@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,8 +36,8 @@ public class UnitController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/units/{unitId}/title")
     public ResponseEntity<AdminUnitDto> updateUnitTitle(@PathVariable String unitId,
-                                                        @RequestBody String newTitle) {
-        return ResponseEntity.ok(unitService.updateUnitTitle(unitId, newTitle));
+                                                        @RequestBody Map<String, String> payload) {
+        return ResponseEntity.ok(unitService.updateUnitTitle(unitId, payload.get("title")));
     }
 
     @PreAuthorize("hasRole('ADMIN')")

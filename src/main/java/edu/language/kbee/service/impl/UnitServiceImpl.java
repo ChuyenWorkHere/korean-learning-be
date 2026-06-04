@@ -106,6 +106,7 @@ public class UnitServiceImpl implements UnitService {
 
         for (Unit u : units) {
             UserUnitDto temp = modelMapper.map(u, UserUnitDto.class);
+            temp.setTitle(cleanTitle(u.getTitle()));
             temp.setCourseId(courseId);
 
             List<LessonProgressDto> unitLessons = lessonsByUnit.getOrDefault(u.getUnitId(), new ArrayList<>())
@@ -166,9 +167,9 @@ public class UnitServiceImpl implements UnitService {
         Unit unit = unitRepository.findById(unitId)
                 .orElseThrow(() -> new RuntimeException("Unit not found"));
 
-        unit.setTitle(newTitle);
+        unit.setTitle(cleanTitle(newTitle));
         Unit updatedUnit = unitRepository.save(unit);
-        return modelMapper.map(updatedUnit, AdminUnitDto.class);
+        return mapToDto(updatedUnit);
     }
 
     @Override
@@ -223,10 +224,21 @@ public class UnitServiceImpl implements UnitService {
 
         return AdminUnitDto.builder()
                 .unitId(unit.getUnitId())
-                .title(unit.getTitle())
+                .title(cleanTitle(unit.getTitle()))
                 .orderIndex(unit.getOrderIndex())
                 .courseId(unit.getCourse().getCourseId())
                 .lessons(lessonDtos)
                 .build();
+    }
+
+    private String cleanTitle(String title) {
+        if (title == null) {
+            return null;
+        }
+        String cleaned = title.trim();
+        if (cleaned.length() >= 2 && cleaned.startsWith("\"") && cleaned.endsWith("\"")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+        return cleaned.trim();
     }
 }
