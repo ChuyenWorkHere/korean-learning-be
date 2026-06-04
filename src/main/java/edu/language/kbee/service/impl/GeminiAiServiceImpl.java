@@ -384,6 +384,8 @@ public class GeminiAiServiceImpl implements AiService {
             - Phần mô tả chỉ 1 đoạn 2-4 câu.
             - Phần lưu ý có 3-5 ý, mỗi ý 1 câu ngắn.
             - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
+            - Phần quizzes có đúng 3 câu hỏi trắc nghiệm luyện dịch Việt-Hàn hoặc Hàn-Việt, tập trung vào đúng chủ điểm ngữ pháp.
+            - Mỗi câu quiz có đúng 4 lựa chọn, đúng 1 lựa chọn isCorrect=true, giải thích ngắn bằng tiếng Việt.
             - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
 
             CHỈ TRẢ VỀ JSON OBJECT THUẦN TÚY theo cấu trúc:
@@ -402,6 +404,18 @@ public class GeminiAiServiceImpl implements AiService {
                   "base": "학생",
                   "sentence": "저는 학생입니다.",
                   "meaning": "Tôi là học sinh."
+                }
+              ],
+              "quizzes": [
+                {
+                  "question": "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?",
+                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
+                  "options": [
+                    { "text": "Lựa chọn đúng", "isCorrect": true },
+                    { "text": "Lựa chọn sai 1", "isCorrect": false },
+                    { "text": "Lựa chọn sai 2", "isCorrect": false },
+                    { "text": "Lựa chọn sai 3", "isCorrect": false }
+                  ]
                 }
               ]
             }
