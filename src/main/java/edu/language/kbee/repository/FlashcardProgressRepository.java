@@ -18,6 +18,8 @@ public interface FlashcardProgressRepository extends JpaRepository<FlashcardProg
 
     Optional<FlashcardProgress> findByUserAndFlashcard(User user, Flashcard flashcard);
 
+    long countByFlashcard_Deck(FlashcardDeck deck);
+
     Long countByUserAndFlashcard_Deck(User user, FlashcardDeck deck);
 
     @Query("SELECT fp.flashcard.cardId FROM FlashcardProgress fp WHERE fp.user = :user AND fp.flashcard.deck = :deck")
