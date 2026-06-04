@@ -8,12 +8,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FlashcardDeckRepository extends JpaRepository<FlashcardDeck, String> {
-    List<FlashcardDeck> findByUser(User user);
-    List<FlashcardDeck> findByIsPublicTrue();
+    List<FlashcardDeck> findByUserAndDeletedAtIsNull(User user);
+    List<FlashcardDeck> findByIsPublicTrueAndDeletedAtIsNull();
 
-    Page<FlashcardDeck> findByUser(User user, Pageable pageable);
-    Page<FlashcardDeck> findByIsPublicTrue(Pageable pageable);
+    Page<FlashcardDeck> findByUserAndDeletedAtIsNull(User user, Pageable pageable);
+    Page<FlashcardDeck> findByIsPublicTrueAndDeletedAtIsNull(Pageable pageable);
+
+    Optional<FlashcardDeck> findByDeckIdAndDeletedAtIsNull(String deckId);
 }

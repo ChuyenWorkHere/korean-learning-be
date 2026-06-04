@@ -43,7 +43,7 @@ public class StudyServiceImpl implements StudyService {
     @Transactional
     public List<FlashcardDto> getCardsToReview(String deckId) {
         User user = authUtil.getLoggedInUser();
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
 
         List<Flashcard> allCards = flashcardRepository.findByDeck(deck);
@@ -87,6 +87,9 @@ public class StudyServiceImpl implements StudyService {
         User user = authUtil.getLoggedInUser();
         Flashcard card = flashcardRepository.findById(request.getCardId())
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
+        if (card.getDeck().getDeletedAt() != null) {
+            throw new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND);
+        }
 
         var existingProgress = progressRepository.findByUserAndFlashcard(user, card);
         boolean isNewCardProgress = existingProgress.isEmpty();

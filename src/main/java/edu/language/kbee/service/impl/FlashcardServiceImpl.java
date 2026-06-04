@@ -26,7 +26,7 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     public List<FlashcardDto> getFlashcardsByDeck(String deckId) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
         return flashcardRepository.findByDeck(deck).stream()
                 .map(card -> mapper.map(card, FlashcardDto.class))
@@ -37,12 +37,13 @@ public class FlashcardServiceImpl implements FlashcardService {
     public FlashcardDto getFlashcardById(String cardId) {
         Flashcard card = flashcardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
+        ensureDeckIsActive(card);
         return mapper.map(card, FlashcardDto.class);
     }
 
     @Override
     public FlashcardDto addFlashcardToDeck(String deckId, FlashcardRequest request) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
                 
         Flashcard flashcard = Flashcard.builder()
@@ -59,7 +60,7 @@ public class FlashcardServiceImpl implements FlashcardService {
 
     @Override
     public List<FlashcardDto> addFlashcardsToDeck(String deckId, List<FlashcardRequest> requests) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
 
         List<Flashcard> flashcards = requests.stream()
@@ -82,6 +83,7 @@ public class FlashcardServiceImpl implements FlashcardService {
     public FlashcardDto updateFlashcard(String cardId, FlashcardRequest request) {
         Flashcard card = flashcardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("cardId", HttpStatus.NOT_FOUND));
+        ensureDeckIsActive(card);
                 
         card.setWord(request.getWord());
         card.setMeaning(request.getMeaning());
@@ -96,6 +98,13 @@ public class FlashcardServiceImpl implements FlashcardService {
     public void deleteFlashcard(String cardId) {
         Flashcard card = flashcardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("cardId", HttpStatus.NOT_FOUND));
+        ensureDeckIsActive(card);
         flashcardRepository.delete(card);
+    }
+
+    private void ensureDeckIsActive(Flashcard card) {
+        if (card.getDeck().getDeletedAt() != null) {
+            throw new ResourceNotFoundException("cardId", HttpStatus.NOT_FOUND);
+        }
     }
 }

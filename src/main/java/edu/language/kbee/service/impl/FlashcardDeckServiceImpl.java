@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,7 +36,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     @Override
     public List<FlashcardDeckDto> getMyDecks() {
         User user = authUtil.getLoggedInUser();
-        List<FlashcardDeck> decks = deckRepository.findByUser(user);
+        List<FlashcardDeck> decks = deckRepository.findByUserAndDeletedAtIsNull(user);
         return decks.stream()
                 .map(deck -> {
                     FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
@@ -56,7 +57,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         }
 
         final User finalUser = user;
-        List<FlashcardDeck> decks = deckRepository.findByIsPublicTrue();
+        List<FlashcardDeck> decks = deckRepository.findByIsPublicTrueAndDeletedAtIsNull();
         return decks.stream()
                 .map(deck -> {
                     FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
@@ -75,7 +76,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     public Page<FlashcardDeckDto> getMyDecks(int page, int size) {
         User user = authUtil.getLoggedInUser();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Page<FlashcardDeck> decks = deckRepository.findByUser(user, pageable);
+        Page<FlashcardDeck> decks = deckRepository.findByUserAndDeletedAtIsNull(user, pageable);
         return decks.map(deck -> {
             FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
             Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(user, deck);
@@ -95,7 +96,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
         final User finalUser = user;
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Page<FlashcardDeck> decks = deckRepository.findByIsPublicTrue(pageable);
+        Page<FlashcardDeck> decks = deckRepository.findByIsPublicTrueAndDeletedAtIsNull(pageable);
         return decks.map(deck -> {
             FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
             if (finalUser != null) {
@@ -110,7 +111,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     @Override
     public FlashcardDeckDto getDeckById(String deckId) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
         return mapper.map(deck, FlashcardDeckDto.class);
     }
@@ -133,19 +134,10 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     @Override
     public FlashcardDeckDto updateDeck(String deckId, DeckRequest request) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
 
-        User user = null;
-        try {
-            user = authUtil.getLoggedInUser();
-        } catch (Exception e) {
-            // Ignore if no user is logged in
-        }
-        boolean isAdmin = user != null && user.getRoles().stream().anyMatch(role -> role.getRoleName().equals(RoleName.ADMIN));
-        if(user != null  && !deck.getUser().getUserId().equals(user.getUserId())) {
-            throw new UnauthorizedException("Unauthorized", HttpStatus.UNAUTHORIZED);
-        }
+        ensureOwnerOrAdmin(deck);
 
         deck.setTitle(request.getTitle());
         deck.setDescription(request.getDescription());
@@ -158,8 +150,28 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     @Override
     public void deleteDeck(String deckId) {
-        FlashcardDeck deck = deckRepository.findById(deckId)
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(deckId)
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
+        ensureOwnerOrAdmin(deck);
+
+        if (progressRepository.countByFlashcard_Deck(deck) > 0) {
+            deck.setIsPublic(false);
+            deck.setDeletedAt(LocalDateTime.now());
+            deckRepository.save(deck);
+            return;
+        }
+
         deckRepository.delete(deck);
+    }
+
+    private void ensureOwnerOrAdmin(FlashcardDeck deck) {
+        User user = authUtil.getLoggedInUser();
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().equals(RoleName.ADMIN));
+        boolean isOwner = deck.getUser().getUserId().equals(user.getUserId());
+
+        if (!isOwner && !isAdmin) {
+            throw new UnauthorizedException("Unauthorized", HttpStatus.UNAUTHORIZED);
+        }
     }
 }
