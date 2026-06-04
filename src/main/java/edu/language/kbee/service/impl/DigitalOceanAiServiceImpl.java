@@ -1,11 +1,12 @@
 package edu.language.kbee.service.impl;
 
 import edu.language.kbee.service.AiService;
+import edu.language.kbee.service.ai.AiResponseParser;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,21 +20,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 @Service
+@ConditionalOnProperty(prefix = "ai", name = "provider", havingValue = "digitalocean", matchIfMissing = true)
 @RequiredArgsConstructor
-public class OpenRouterAiServiceImpl implements AiService {
+public class DigitalOceanAiServiceImpl implements AiService {
 
-    @Value("${openrouter.api-key}")
+    @Value("${digitalocean.ai.api-key:${openai.api-key}}")
     private String apiKey;
 
-    @Value("${openrouter.model}")
+    @Value("${digitalocean.ai.model:${openai.model}}")
     private String modelName;
 
-    public static final Logger logger = LoggerFactory.getLogger(OpenRouterAiServiceImpl.class);
+    public static final Logger logger = LoggerFactory.getLogger(DigitalOceanAiServiceImpl.class);
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final String baseUrl = "https://openrouter.ai/api/v1/chat/completions";
+    private final String baseUrl = "https://inference.do-ai.run/v1/chat/completions";
 
     @Override
     public JsonNode generateWritingPrompt(String topic) throws Exception {
@@ -43,7 +44,7 @@ public class OpenRouterAiServiceImpl implements AiService {
                 "TRẢ VỀ KẾT QUẢ DƯỚI DẠNG JSON CHUẨN (KHÔNG CÓ FORMAT MARKDOWN HAY CODE BLOCK), cấu trúc như sau: " +
                 "{ \"title\": \"Tên chủ đề tiếng Anh\", \"instructions\": \"Yêu cầu đề bài bằng tiếng Hàn (kèm 3 câu hỏi gợi ý bằng tiếng Hàn ở phía dưới)\", \"minWords\": 200, \"maxWords\": 300, \"timeLimit\": 30, \"difficulty\": \"Intermediate (Level 3-4)\" }";
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class OpenRouterAiServiceImpl implements AiService {
                 "  \"variations\": [\"Bản dịch tiếng Hàn chấp nhận được 1\", \"Bản dịch tiếng Hàn chấp nhận được 2\"]\n" +
                 "}";
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
     @Override
@@ -127,7 +128,7 @@ public class OpenRouterAiServiceImpl implements AiService {
             }
             """.formatted(context, studentContent);
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
     @Override
@@ -173,7 +174,7 @@ public class OpenRouterAiServiceImpl implements AiService {
                 "Hãy trộn ngẫu nhiên vị trí đáp án đúng (không phải lúc nào cũng ở vị trí đầu tiên).";
 
         try {
-            return callOpenRouterApi(systemMsg, userMsg);
+            return callDigitalOceanApi(systemMsg, userMsg);
         } catch (Exception e) {
             logger.error("Lỗi tạo quiz: {}", e.getMessage());
             throw new RuntimeException("Lỗi tạo quiz: " + e.getMessage());
@@ -220,7 +221,7 @@ public class OpenRouterAiServiceImpl implements AiService {
             }
             """.formatted(grammarPoint, level);
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
     @Override
@@ -250,7 +251,7 @@ public class OpenRouterAiServiceImpl implements AiService {
             TRANSCRIPT:
             """ + rawSubtitleText;
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
     @Override
@@ -267,10 +268,10 @@ public class OpenRouterAiServiceImpl implements AiService {
                 "{ \"vocabulary\": [ { \"word\": \"từ/cụm từ tiếng Hàn\", \"meaning\": \"nghĩa tiếng Việt\", \"type\": \"noun|verb|adjective|adverb|phrase|idiom|grammar\" } ] } " +
                 "VĂN BẢN CẦN PHÂN TÍCH: " + content;
 
-        return callOpenRouterApi(systemMsg, userMsg);
+        return callDigitalOceanApi(systemMsg, userMsg);
     }
 
-    private JsonNode callOpenRouterApi(String systemMsg, String userMsg) throws Exception {
+    private JsonNode callDigitalOceanApi(String systemMsg, String userMsg) throws Exception {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + apiKey.trim());
@@ -297,44 +298,16 @@ public class OpenRouterAiServiceImpl implements AiService {
             JsonNode rootNode = objectMapper.readTree(response);
 
             if (rootNode.has("error")) {
-                throw new RuntimeException("OpenRouter Error: " + rootNode.path("error").path("message").asText());
+                throw new RuntimeException("DigitalOcean AI Error: " + rootNode.path("error").path("message").asText());
             }
 
             String aiContent = rootNode.path("choices").get(0).path("message").path("content").asText();
-            aiContent = cleanAiResponse(aiContent);
+            aiContent = AiResponseParser.extractJson(aiContent);
 
             return objectMapper.readTree(aiContent);
         } catch (Exception e) {
             logger.error("API Call failed: {}", e.getMessage());
             throw e;
         }
-    }
-
-    private String cleanAiResponse(String response) {
-        if (response == null) return "{}";
-        // Loại bỏ markdown và các đoạn văn bản thừa không phải JSON
-        String cleaned = response.trim();
-        if (cleaned.contains("```json")) {
-            cleaned = cleaned.substring(cleaned.indexOf("```json") + 7);
-            cleaned = cleaned.substring(0, cleaned.lastIndexOf("```"));
-        } else if (cleaned.contains("```")) {
-            cleaned = cleaned.substring(cleaned.indexOf("```") + 3);
-            cleaned = cleaned.substring(0, cleaned.lastIndexOf("```"));
-        }
-
-        // Tìm vị trí bắt đầu và kết thúc của JSON thực tế ({ hoặc [)
-        int firstBrace = cleaned.indexOf('{');
-        int firstBracket = cleaned.indexOf('[');
-        int start = (firstBrace != -1 && (firstBracket == -1 || firstBrace < firstBracket)) ? firstBrace : firstBracket;
-
-        int lastBrace = cleaned.lastIndexOf('}');
-        int lastBracket = cleaned.lastIndexOf(']');
-        int end = (lastBrace > lastBracket) ? lastBrace : lastBracket;
-
-        if (start != -1 && end != -1 && end > start) {
-            return cleaned.substring(start, end + 1);
-        }
-
-        return cleaned.trim();
     }
 }

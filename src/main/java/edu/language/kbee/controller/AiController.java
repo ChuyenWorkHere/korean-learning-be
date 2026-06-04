@@ -13,14 +13,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AiController {
 
-    private final AiService openRouterAi;
+    private final AiService aiService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/generate-writing")
     public ResponseEntity<?> generateWritingPrompt(@RequestBody Map<String, String> payload) {
         try {
             String topic = payload.getOrDefault("topic", "Korean Culture and Society");
-            return ResponseEntity.ok(openRouterAi.generateWritingPrompt(topic));
+            return ResponseEntity.ok(aiService.generateWritingPrompt(topic));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -31,7 +31,7 @@ public class AiController {
     public ResponseEntity<?> generateTranslationPrompt(@RequestBody Map<String, String> payload) {
         try {
             String topic = payload.getOrDefault("topic", "Daily Life");
-            return ResponseEntity.ok(openRouterAi.generateTranslationPrompt(topic));
+            return ResponseEntity.ok(aiService.generateTranslationPrompt(topic));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -51,7 +51,7 @@ public class AiController {
                 skillType = "general";
             }
             
-            return ResponseEntity.ok(openRouterAi.generateQuizzes(context, skillType));
+            return ResponseEntity.ok(aiService.generateQuizzes(context, skillType));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -68,7 +68,7 @@ public class AiController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Grammar point is required"));
             }
 
-            return ResponseEntity.ok(openRouterAi.generateGrammarLesson(grammarPoint, level));
+            return ResponseEntity.ok(aiService.generateGrammarLesson(grammarPoint, level));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
@@ -81,7 +81,7 @@ public class AiController {
             if (content == null || content.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Content is required"));
             }
-            return ResponseEntity.ok(openRouterAi.extractVocabulary(content));
+            return ResponseEntity.ok(aiService.extractVocabulary(content));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }
