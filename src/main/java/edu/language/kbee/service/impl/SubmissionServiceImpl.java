@@ -46,12 +46,15 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         JsonNode feedbackNode;
         int score = 0;
-        String blockContext = buildWritingContext(block.getBlockId(), request.getSubmissionType());
+        String blockContext = buildWritingContext(block, request.getSubmissionType());
+        String aiTaskType = "IMAGE_WRITING".equals(block.getBlockType().name())
+                ? "IMAGE_WRITING"
+                : request.getSubmissionType().name();
 
         try {
             feedbackNode = aiService.gradeWritingSubmission(
                     request.getSubmittedContent(),
-                    request.getSubmissionType().name(),
+                    aiTaskType,
                     blockContext
             );
 
@@ -171,14 +174,23 @@ public class SubmissionServiceImpl implements SubmissionService {
                 .orElseThrow(() -> new BadRequestException("Writing task not found"));
     }
 
-    private String buildWritingContext(String blockId, SubmissionType submissionType) {
-        WritingTask task = findWritingTask(blockId, submissionType);
+    private String buildWritingContext(LessonBlock block, SubmissionType submissionType) {
+        WritingTask task = findWritingTask(block.getBlockId(), submissionType);
 
         if (submissionType == SubmissionType.ESSAY) {
-            return "Essay Title/Topic: " + nullToEmpty(task.getPrompt())
+            String context = "Essay Title/Topic: " + nullToEmpty(task.getPrompt())
                     + "\nInstructions: " + nullToEmpty(task.getInstructions())
                     + "\nYeu cau do dai (BAT BUOC): Tu " + nullToEmpty(task.getMinWords())
                     + " den " + nullToEmpty(task.getMaxWords()) + " ky tu.";
+
+            if ("IMAGE_WRITING".equals(block.getBlockType().name())) {
+                context += "\n\nDay la dang bai viet TOPIK II cau 53 dua tren de bai bang hinh anh/bieu do/bang so lieu."
+                        + "\nHay cham theo muc do hoc sinh phan tich dung thong tin trong hinh, mo ta xu huong/so lieu hop ly, so sanh ro rang, va dung van phong TOPIK."
+                        + "\nImage URL cua de bai: " + readMetadataText(block.getMetadataJson(), "imageUrl")
+                        + "\nY chinh/dap an tham chieu cua giao vien neu co: " + readMetadataText(block.getMetadataJson(), "gradingReference");
+            }
+
+            return context;
         }
 
         if (submissionType == SubmissionType.TRANSLATION) {
@@ -222,6 +234,16 @@ public class SubmissionServiceImpl implements SubmissionService {
 
     private String nullToEmpty(Object value) {
         return value == null ? "" : String.valueOf(value);
+    }
+
+    private String readMetadataText(String metadataJson, String fieldName) {
+        if (metadataJson == null || metadataJson.isBlank()) return "";
+        try {
+            JsonNode metadata = objectMapper.readTree(metadataJson);
+            return metadata.path(fieldName).asText("");
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     private SubmissionResponse mapToResponse(StudentSubmission submission, JsonNode feedbackNode) {

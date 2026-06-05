@@ -64,7 +64,43 @@ public class DigitalOceanAiServiceImpl implements AiService {
 
     @Override
     public JsonNode gradeWritingSubmission(String studentContent, String taskType, String blockContext) throws Exception {
-        String context = taskType.equalsIgnoreCase("ESSAY")
+        String context = taskType.equalsIgnoreCase("IMAGE_WRITING")
+                ? """
+                  DANG BAI: TOPIK II Writing cau 53 - viet mo ta bieu do/bang so lieu/do thi dua tren hinh anh de bai.
+                  Yeu cau de thi: hoc sinh viet mot doan van tieng Han khoang 200-300 ky tu, mo ta thong tin trong bieu do/bang so lieu/do thi. Cau nay co thang diem goc 30 diem.
+
+                  BAT BUOC cham theo 4 tieu chi chinh thuc:
+                  (1) Noi dung va hoan thanh nhiem vu:
+                  - Co gioi thieu dung chu de/khao sat/nguon du lieu/thoi diem neu de bai co.
+                  - Doc dung so lieu, khong bia so lieu, khong noi sai xu huong.
+                  - Neu duoc cac diem noi bat: tang/giam/on dinh, muc cao nhat/thap nhat, so sanh giua cac nhom, ket luan xu huong chung.
+                  - Bai lac de, khong dua tren hinh, hoac chi viet chung chung ma khong co so lieu/xu huong thi diem noi dung rat thap.
+
+                  (2) To chuc va mach lac:
+                  - Mo bai: neu bieu do noi ve van de gi, ket qua khao sat/du lieu la gi. Mau tot: ~에 대해 조사한 결과는 다음과 같다.
+                  - Than bai: mo ta so lieu/xu huong quan trong theo trinh tu logic, co so sanh bang 반면에, 한편, 특히, ~에 비해.
+                  - Ket bai: tom tat diem noi bat bang 이를 통해 ~것을 알 수 있다 hoac cau tuong duong.
+                  - Khong chi liet ke so lieu roi roi; can lien ket y bang bieu thuc phu hop.
+
+                  (3) Tu vung va bieu thuc:
+                  - Uu tien cac mau cau cau 53: ~것으로 나타났다, ~에 비해, ~(으)ㄴ/는 반면, 증가하다, 감소하다, 차지하다, 가장 높다/낮다, 비율, 조사 결과.
+                  - Tru diem neu lap tu qua nhieu, dung tu khong hop voi bieu do, hoac thieu tu vung mo ta xu huong/so sanh.
+
+                  (4) Chinh xac ngu phap:
+                  - Kiem tra tieu tu, chia duoi, thi, dinh ngu, cau noi so sanh, va the van viet.
+                  - TOPIK cau 53 nen dung van phong bao cao/trung lap, uu tien ~(으)ㄴ/는다, ~것으로 나타났다; han che van noi than mat.
+
+                  DO DAI:
+                  - Dem tong so ky tu bai viet tieng Han, khong tinh khoang trang.
+                  - Can canh bao neu nam ngoai 200-300 ky tu hoac ngoai minWords/maxWords trong de bai.
+
+                  CACH CHAM:
+                  - Hay uoc tinh diem goc /30 theo 4 tieu chi, sau do quy doi sang score 0-100 cho truong JSON "score".
+                  - Trong "analysis", bat buoc ghi diem tung tieu chi, diem goc /30, diem quy doi /100, diem manh, loi sai, va cach sua cu the.
+                  - Trong "breakdowns", nen co cac muc type: content|organization|vocabulary|grammar|length neu co van de.
+                  - O truong "corrected", viet lai mot phien ban mau tieng Han tu nhien hon, dung format TOPIK cau 53, khong qua dai.
+                  """
+                : taskType.equalsIgnoreCase("ESSAY")
                 ? """
                   Đánh giá dựa trên tiêu chuẩn bài thi TOPIK II phần Viết. BẮT BUỘC chấm điểm theo 4 tiêu chí sau:
                   (1) Nội dung và hoàn thành nhiệm vụ: Trả lời đúng yêu cầu đề bài, lập luận thuyết phục.

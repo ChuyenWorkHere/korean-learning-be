@@ -283,24 +283,6 @@ public class LessonServiceImpl implements LessonService {
                             if (isCorrect) correctCount++;
                             results.put(block.getBlockId(), isCorrect);
                         }
-                    } else if (block.getBlockType() == LessonBlockType.DICTATION) {
-                        for (DictationItem item : block.getDictationItems()) {
-                            Matcher matcher = Pattern.compile("\\[(.*?)\\]").matcher(item.getPromptText());
-                            int blankIndex = 0;
-
-                            while (matcher.find()) {
-                                totalCount++;
-                                blankIndex++;
-                                int oddIndex = blankIndex * 2 - 1;
-                                String answerKey = block.getBlockId() + "-" + oddIndex;
-                                String expectedWord = matcher.group(1).trim().toLowerCase();
-                                String userAnswer = request.getAnswers().getOrDefault(answerKey, "").trim().toLowerCase();
-
-                                boolean isCorrect = expectedWord.equals(userAnswer);
-                                if (isCorrect) correctCount++;
-                                results.put(answerKey, isCorrect);
-                            }
-                        }
                     } else if (block.getBlockType() == LessonBlockType.WORKSHEET) {
                         WorksheetGrade worksheetGrade = gradeWorksheetBlock(block, request.getAnswers());
                         totalCount += worksheetGrade.totalCount();
@@ -495,11 +477,13 @@ public class LessonServiceImpl implements LessonService {
                     .orderIndex(0)
                     .build();
             block.getDictationItems().add(item);
-        } else if (blockType == LessonBlockType.ESSAY || blockType == LessonBlockType.TRANSLATION) {
+        } else if (blockType == LessonBlockType.ESSAY
+                || blockType == LessonBlockType.IMAGE_WRITING
+                || blockType == LessonBlockType.TRANSLATION) {
             WritingTask task = WritingTask.builder()
                     .block(block)
-                    .taskType(blockType == LessonBlockType.ESSAY ? SubmissionType.ESSAY : SubmissionType.TRANSLATION)
-                    .prompt(blockType == LessonBlockType.ESSAY ? readText(blockNode, "title") : readText(blockNode, "english"))
+                    .taskType(blockType == LessonBlockType.TRANSLATION ? SubmissionType.TRANSLATION : SubmissionType.ESSAY)
+                    .prompt(blockType == LessonBlockType.TRANSLATION ? readText(blockNode, "english") : readText(blockNode, "title"))
                     .instructions(readText(blockNode, "instructions"))
                     .minWords(readInt(blockNode, "minWords"))
                     .maxWords(readInt(blockNode, "maxWords"))
@@ -536,10 +520,12 @@ public class LessonServiceImpl implements LessonService {
                 DictationItem itemData = block.getDictationItems().get(0);
                 item.put("text", itemData.getPromptText());
                 if (itemData.getAudioUrl() != null) item.put("audioUrl", itemData.getAudioUrl());
-            } else if ((block.getBlockType() == LessonBlockType.ESSAY || block.getBlockType() == LessonBlockType.TRANSLATION)
+            } else if ((block.getBlockType() == LessonBlockType.ESSAY
+                    || block.getBlockType() == LessonBlockType.IMAGE_WRITING
+                    || block.getBlockType() == LessonBlockType.TRANSLATION)
                     && !block.getWritingTasks().isEmpty()) {
                 WritingTask task = block.getWritingTasks().get(0);
-                if (block.getBlockType() == LessonBlockType.ESSAY) {
+                if (block.getBlockType() == LessonBlockType.ESSAY || block.getBlockType() == LessonBlockType.IMAGE_WRITING) {
                     item.put("title", task.getPrompt());
                     item.put("instructions", task.getInstructions());
                     item.put("minWords", task.getMinWords());
@@ -578,7 +564,7 @@ public class LessonServiceImpl implements LessonService {
     }
 
     private String readContentText(JsonNode blockNode, LessonBlockType blockType) {
-        if (blockType == LessonBlockType.THEORY || blockType == LessonBlockType.LONG_TEXT) {
+        if (blockType == LessonBlockType.THEORY || blockType == LessonBlockType.INSTRUCTION || blockType == LessonBlockType.LONG_TEXT) {
             return readText(blockNode, "content");
         }
         return null;
