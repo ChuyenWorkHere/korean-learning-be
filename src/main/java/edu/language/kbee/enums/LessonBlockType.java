@@ -2,6 +2,7 @@ package edu.language.kbee.enums;
 
 public enum LessonBlockType {
     THEORY,
+    INSTRUCTION,
     FORMULA,
     USAGE_NOTE,
     EXAMPLES,
@@ -13,6 +14,7 @@ public enum LessonBlockType {
     TRANSCRIPT,
     DICTATION,
     ESSAY,
+    IMAGE_WRITING,
     TRANSLATION,
     WONGOJI,
     AI_GRADING,
