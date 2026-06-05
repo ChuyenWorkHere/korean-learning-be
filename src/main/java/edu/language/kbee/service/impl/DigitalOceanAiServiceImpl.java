@@ -200,6 +200,7 @@ public class DigitalOceanAiServiceImpl implements AiService {
             - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
             - Phần quizzes có đúng 3 câu hỏi trắc nghiệm luyện dịch Việt-Hàn hoặc Hàn-Việt, tập trung vào đúng chủ điểm ngữ pháp.
             - Mỗi câu quiz có đúng 4 lựa chọn, đúng 1 lựa chọn isCorrect=true, giải thích ngắn bằng tiếng Việt.
+            - Bắt buộc đảo vị trí đáp án đúng: câu 1 không đặt đáp án đúng ở lựa chọn đầu tiên, câu 2 và câu 3 phải có đáp án đúng ở vị trí khác nhau.
             - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
 
             TRẢ VỀ DUY NHẤT JSON OBJECT theo cấu trúc:
@@ -225,9 +226,29 @@ public class DigitalOceanAiServiceImpl implements AiService {
                   "question": "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?",
                   "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
                   "options": [
+                    { "text": "Lựa chọn sai 1", "isCorrect": false },
                     { "text": "Lựa chọn đúng", "isCorrect": true },
+                    { "text": "Lựa chọn sai 2", "isCorrect": false },
+                    { "text": "Lựa chọn sai 3", "isCorrect": false }
+                  ]
+                },
+                {
+                  "question": "Câu tiếng Hàn sau có nghĩa là gì?",
+                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
+                  "options": [
                     { "text": "Lựa chọn sai 1", "isCorrect": false },
                     { "text": "Lựa chọn sai 2", "isCorrect": false },
+                    { "text": "Lựa chọn sai 3", "isCorrect": false },
+                    { "text": "Lựa chọn đúng", "isCorrect": true }
+                  ]
+                },
+                {
+                  "question": "Chọn câu dùng đúng cấu trúc ngữ pháp.",
+                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
+                  "options": [
+                    { "text": "Lựa chọn sai 1", "isCorrect": false },
+                    { "text": "Lựa chọn sai 2", "isCorrect": false },
+                    { "text": "Lựa chọn đúng", "isCorrect": true },
                     { "text": "Lựa chọn sai 3", "isCorrect": false }
                   ]
                 }
