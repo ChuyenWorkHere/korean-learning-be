@@ -312,7 +312,10 @@ public class LessonServiceImpl implements LessonService {
                 throw new BadRequestException("Loi khi cham diem bai hoc: " + e.getMessage());
             }
 
-            score = totalCount == 0 ? 0 : Math.round((float) correctCount / totalCount * 100);
+            int objectiveScore = totalCount == 0 ? 0 : Math.round((float) correctCount / totalCount * 100);
+            score = request.getScore() != null
+                    ? Math.round((request.getScore() + objectiveScore) / 2.0f)
+                    : objectiveScore;
         } else {
             score = request.getScore() != null ? request.getScore() : 0;
         }
