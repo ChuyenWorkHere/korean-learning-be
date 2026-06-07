@@ -246,6 +246,7 @@ public class UserServiceImpl implements UserService {
                     case LISTENING: categoryName = "Nghe hiểu"; break;
                     case WRITING: categoryName = "Viết"; break;
                     case SPEAKING: categoryName = "Nói"; break;
+                    case THEORY: categoryName = "Lý thuyết"; break;
                 }
             }
 
