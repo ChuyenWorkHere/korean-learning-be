@@ -2,6 +2,7 @@ package edu.language.kbee.service.impl;
 
 import edu.language.kbee.enums.LessonBlockType;
 import edu.language.kbee.enums.LessonStatus;
+import edu.language.kbee.enums.LessonType;
 import edu.language.kbee.enums.ProgressStatus;
 import edu.language.kbee.enums.SubmissionType;
 import edu.language.kbee.enums.XpSourceType;
@@ -311,7 +312,8 @@ public class LessonServiceImpl implements LessonService {
                         .build());
         boolean wasAlreadyCompleted = currentProgress.getStatus() == ProgressStatus.COMPLETED;
 
-        ProgressStatus newStatus = score >= 80 ? ProgressStatus.COMPLETED : ProgressStatus.FAILED;
+        int passingScore = currentLesson.getType() == LessonType.WRITING ? 50 : 80;
+        ProgressStatus newStatus = score >= passingScore ? ProgressStatus.COMPLETED : ProgressStatus.FAILED;
 
         currentProgress.setScore(score);
         currentProgress.setStatus(newStatus);
