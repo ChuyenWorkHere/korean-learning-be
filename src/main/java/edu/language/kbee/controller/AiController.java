@@ -50,8 +50,14 @@ public class AiController {
             if (skillType == null || skillType.trim().isEmpty()) {
                 skillType = "general";
             }
+            int quizCount = 10;
+            try {
+                quizCount = Integer.parseInt(payload.getOrDefault("quizCount", "10"));
+            } catch (NumberFormatException ignored) {
+                quizCount = 10;
+            }
             
-            return ResponseEntity.ok(aiService.generateQuizzes(context, skillType));
+            return ResponseEntity.ok(aiService.generateQuizzes(context, skillType, quizCount));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
         }

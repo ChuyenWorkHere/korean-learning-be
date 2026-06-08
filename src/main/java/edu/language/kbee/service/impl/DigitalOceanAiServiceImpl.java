@@ -168,8 +168,9 @@ public class DigitalOceanAiServiceImpl implements AiService {
     }
 
     @Override
-    public JsonNode generateQuizzes(String context, String skillType) {
+    public JsonNode generateQuizzes(String context, String skillType, int quizCount) {
         String systemMsg = "Bạn là chuyên gia giảng dạy tiếng Hàn. CHỈ trả về JSON Array thuần túy, KHÔNG có markdown, KHÔNG có giải thích thêm.";
+        int safeQuizCount = Math.max(1, Math.min(quizCount, 10));
         String lowerSkillType = skillType == null ? "general" : skillType.toLowerCase();
         String quizInstruction;
         switch (lowerSkillType) {
@@ -194,9 +195,10 @@ public class DigitalOceanAiServiceImpl implements AiService {
             default:
                 quizInstruction = "Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
         }
+        quizInstruction = quizInstruction.replace("10 câu", safeQuizCount + " câu");
 
         String userMsg = quizInstruction +
-                "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG 10 OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
+                "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG " + safeQuizCount + " OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
                 "{\n" +
                 "  \"question\": \"Nội dung câu hỏi?\",\n" +
                 "  \"explanation\": \"Giải thích ngắn gọn lý do chọn đáp án đúng bằng tiếng Việt.\",\n" +
@@ -234,13 +236,11 @@ public class DigitalOceanAiServiceImpl implements AiService {
             - Phần mô tả chỉ 1 đoạn 2-4 câu.
             - Phần lưu ý có 3-5 ý, mỗi ý 1 câu ngắn.
             - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
-            - Phần quizzes có đúng 10 câu hỏi trắc nghiệm luyện dịch Việt-Hàn hoặc Hàn-Việt, tập trung vào đúng chủ điểm ngữ pháp.
-            - Mỗi câu quiz có đúng 4 lựa chọn, đúng 1 lựa chọn isCorrect=true, giải thích ngắn bằng tiếng Việt.
-            - Bắt buộc đảo vị trí đáp án đúng giữa 10 câu; không để tất cả đáp án đúng ở cùng một vị trí và không để đáp án đúng luôn ở lựa chọn đầu tiên.
+            - Không tạo quiz trong request này; trả về mảng "quizzes" rỗng. Quiz sẽ được tạo bằng endpoint riêng để tránh timeout production.
             - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
 
             TRẢ VỀ DUY NHẤT JSON OBJECT theo cấu trúc:
-            LƯU Ý: Mảng "quizzes" trong JSON trả về thực tế BẮT BUỘC có đúng 10 object quiz, không phải 3 object.
+            LƯU Ý: Mảng "quizzes" trong JSON trả về thực tế BẮT BUỘC là mảng rỗng [].
             {
               "title": "Tên bài học ngắn gọn, ví dụ: 입니다",
               "description": "Đoạn tổng quan lý thuyết bằng tiếng Việt.",
@@ -258,38 +258,7 @@ public class DigitalOceanAiServiceImpl implements AiService {
                   "meaning": "Tôi là học sinh."
                 }
               ],
-              "quizzes": [
-                {
-                  "question": "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?",
-                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
-                  "options": [
-                    { "text": "Lựa chọn sai 1", "isCorrect": false },
-                    { "text": "Lựa chọn đúng", "isCorrect": true },
-                    { "text": "Lựa chọn sai 2", "isCorrect": false },
-                    { "text": "Lựa chọn sai 3", "isCorrect": false }
-                  ]
-                },
-                {
-                  "question": "Câu tiếng Hàn sau có nghĩa là gì?",
-                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
-                  "options": [
-                    { "text": "Lựa chọn sai 1", "isCorrect": false },
-                    { "text": "Lựa chọn sai 2", "isCorrect": false },
-                    { "text": "Lựa chọn sai 3", "isCorrect": false },
-                    { "text": "Lựa chọn đúng", "isCorrect": true }
-                  ]
-                },
-                {
-                  "question": "Chọn câu dùng đúng cấu trúc ngữ pháp.",
-                  "explanation": "Giải thích ngắn gọn vì sao đáp án đúng.",
-                  "options": [
-                    { "text": "Lựa chọn sai 1", "isCorrect": false },
-                    { "text": "Lựa chọn sai 2", "isCorrect": false },
-                    { "text": "Lựa chọn đúng", "isCorrect": true },
-                    { "text": "Lựa chọn sai 3", "isCorrect": false }
-                  ]
-                }
-              ]
+              "quizzes": []
             }
             """.formatted(grammarPoint, level);
 
