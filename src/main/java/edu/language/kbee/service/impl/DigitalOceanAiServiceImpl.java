@@ -175,7 +175,7 @@ public class DigitalOceanAiServiceImpl implements AiService {
         switch (lowerSkillType) {
             case "grammar":
                 quizInstruction = """
-                    Dựa vào phần lý thuyết ngữ pháp sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm tập trung vào DỊCH Việt-Hàn hoặc Hàn-Việt.
+                    Dựa vào phần lý thuyết ngữ pháp sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm tập trung vào DỊCH Việt-Hàn hoặc Hàn-Việt.
                     YÊU CẦU RIÊNG CHO QUIZ NGỮ PHÁP:
                     - Mỗi câu phải kiểm tra việc dùng đúng cấu trúc ngữ pháp trong ngữ cảnh dịch.
                     - Ưu tiên dạng: "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?" hoặc "Câu tiếng Hàn sau nghĩa là gì?".
@@ -186,17 +186,17 @@ public class DigitalOceanAiServiceImpl implements AiService {
                     """ + context;
                 break;
             case "listening":
-                quizInstruction = "Dựa trực tiếp vào transcript của bài nghe sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết nghe được hoặc suy luận gần từ transcript. TRANSCRIPT:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào transcript của bài nghe sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết nghe được hoặc suy luận gần từ transcript. TRANSCRIPT:\n" + context;
                 break;
             case "reading":
-                quizInstruction = "Dựa trực tiếp vào đoạn đọc sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết, từ vựng trong ngữ cảnh hoặc suy luận từ bài đọc. ĐOẠN ĐỌC:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào đoạn đọc sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết, từ vựng trong ngữ cảnh hoặc suy luận từ bài đọc. ĐOẠN ĐỌC:\n" + context;
                 break;
             default:
-                quizInstruction = "Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 3 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
         }
 
         String userMsg = quizInstruction +
-                "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG 3 OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
+                "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG 10 OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
                 "{\n" +
                 "  \"question\": \"Nội dung câu hỏi?\",\n" +
                 "  \"explanation\": \"Giải thích ngắn gọn lý do chọn đáp án đúng bằng tiếng Việt.\",\n" +
@@ -234,12 +234,13 @@ public class DigitalOceanAiServiceImpl implements AiService {
             - Phần mô tả chỉ 1 đoạn 2-4 câu.
             - Phần lưu ý có 3-5 ý, mỗi ý 1 câu ngắn.
             - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
-            - Phần quizzes có đúng 3 câu hỏi trắc nghiệm luyện dịch Việt-Hàn hoặc Hàn-Việt, tập trung vào đúng chủ điểm ngữ pháp.
+            - Phần quizzes có đúng 10 câu hỏi trắc nghiệm luyện dịch Việt-Hàn hoặc Hàn-Việt, tập trung vào đúng chủ điểm ngữ pháp.
             - Mỗi câu quiz có đúng 4 lựa chọn, đúng 1 lựa chọn isCorrect=true, giải thích ngắn bằng tiếng Việt.
-            - Bắt buộc đảo vị trí đáp án đúng: câu 1 không đặt đáp án đúng ở lựa chọn đầu tiên, câu 2 và câu 3 phải có đáp án đúng ở vị trí khác nhau.
+            - Bắt buộc đảo vị trí đáp án đúng giữa 10 câu; không để tất cả đáp án đúng ở cùng một vị trí và không để đáp án đúng luôn ở lựa chọn đầu tiên.
             - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
 
             TRẢ VỀ DUY NHẤT JSON OBJECT theo cấu trúc:
+            LƯU Ý: Mảng "quizzes" trong JSON trả về thực tế BẮT BUỘC có đúng 10 object quiz, không phải 3 object.
             {
               "title": "Tên bài học ngắn gọn, ví dụ: 입니다",
               "description": "Đoạn tổng quan lý thuyết bằng tiếng Việt.",
