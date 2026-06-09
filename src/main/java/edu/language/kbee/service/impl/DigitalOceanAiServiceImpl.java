@@ -11,6 +11,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -35,6 +36,8 @@ public class DigitalOceanAiServiceImpl implements AiService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String baseUrl = "https://inference.do-ai.run/v1/chat/completions";
+    private static final int MAX_AI_RETRY_ATTEMPTS = 3;
+    private static final long BASE_RETRY_DELAY_MS = 1_500L;
 
     @Override
     public JsonNode generateWritingPrompt(String topic) throws Exception {
@@ -334,21 +337,47 @@ public class DigitalOceanAiServiceImpl implements AiService {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
-        try {
-            String response = restTemplate.postForObject(baseUrl, entity, String.class);
-            JsonNode rootNode = objectMapper.readTree(response);
+        for (int attempt = 1; attempt <= MAX_AI_RETRY_ATTEMPTS; attempt++) {
+            try {
+                String response = restTemplate.postForObject(baseUrl, entity, String.class);
+                JsonNode rootNode = objectMapper.readTree(response);
 
-            if (rootNode.has("error")) {
-                throw new RuntimeException("DigitalOcean AI Error: " + rootNode.path("error").path("message").asText());
+                if (rootNode.has("error")) {
+                    throw new RuntimeException("DigitalOcean AI Error: " + rootNode.path("error").path("message").asText());
+                }
+
+                String aiContent = rootNode.path("choices").get(0).path("message").path("content").asText();
+                aiContent = AiResponseParser.extractJson(aiContent);
+
+                return objectMapper.readTree(aiContent);
+            } catch (HttpStatusCodeException e) {
+                if (e.getStatusCode().value() != 429 || attempt == MAX_AI_RETRY_ATTEMPTS) {
+                    logger.error("API Call failed: {}", e.getMessage());
+                    throw e;
+                }
+
+                long delayMs = getRetryDelayMs(e, attempt);
+                logger.warn("DigitalOcean AI rate limited request. Retrying attempt {}/{} after {}ms.", attempt + 1, MAX_AI_RETRY_ATTEMPTS, delayMs);
+                Thread.sleep(delayMs);
+            } catch (Exception e) {
+                logger.error("API Call failed: {}", e.getMessage());
+                throw e;
             }
-
-            String aiContent = rootNode.path("choices").get(0).path("message").path("content").asText();
-            aiContent = AiResponseParser.extractJson(aiContent);
-
-            return objectMapper.readTree(aiContent);
-        } catch (Exception e) {
-            logger.error("API Call failed: {}", e.getMessage());
-            throw e;
         }
+
+        throw new IllegalStateException("DigitalOcean AI call failed after retry attempts.");
+    }
+
+    private long getRetryDelayMs(HttpStatusCodeException exception, int attempt) {
+        String retryAfter = exception.getResponseHeaders() == null ? null : exception.getResponseHeaders().getFirst("Retry-After");
+        if (retryAfter != null) {
+            try {
+                return Math.max(1_000L, Long.parseLong(retryAfter) * 1_000L);
+            } catch (NumberFormatException ignored) {
+                // Fall back to exponential backoff below.
+            }
+        }
+
+        return BASE_RETRY_DELAY_MS * attempt * attempt;
     }
 }
