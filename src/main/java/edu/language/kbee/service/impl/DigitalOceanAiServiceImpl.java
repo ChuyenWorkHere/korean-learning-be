@@ -236,7 +236,7 @@ public class DigitalOceanAiServiceImpl implements AiService {
             - Phần mô tả chỉ 1 đoạn 2-4 câu.
             - Phần lưu ý có 3-5 ý, mỗi ý 1 câu ngắn.
             - Phần ví dụ có đúng 3 dòng, mỗi dòng gồm từ gốc/cụm gốc, câu tiếng Hàn, nghĩa tiếng Việt.
-            - Không tạo quiz trong request này; trả về mảng "quizzes" rỗng. Quiz sẽ được tạo bằng endpoint riêng để tránh timeout production.
+            - Không tạo quiz trong request này; trả về mảng "quizzes" rỗng.
             - Không dùng HTML, markdown, bullet ký tự đặc biệt hoặc đánh số trong chuỗi.
 
             TRẢ VỀ DUY NHẤT JSON OBJECT theo cấu trúc:
