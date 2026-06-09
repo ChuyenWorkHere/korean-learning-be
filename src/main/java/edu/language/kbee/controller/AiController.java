@@ -50,11 +50,11 @@ public class AiController {
             if (skillType == null || skillType.trim().isEmpty()) {
                 skillType = "general";
             }
-            int quizCount = 10;
+            int quizCount = 5;
             try {
-                quizCount = Integer.parseInt(payload.getOrDefault("quizCount", "10"));
+                quizCount = Integer.parseInt(payload.getOrDefault("quizCount", "5"));
             } catch (NumberFormatException ignored) {
-                quizCount = 10;
+                quizCount = 5;
             }
             
             return ResponseEntity.ok(aiService.generateQuizzes(context, skillType, quizCount));
