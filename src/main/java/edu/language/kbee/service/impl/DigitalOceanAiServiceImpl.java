@@ -176,7 +176,7 @@ public class DigitalOceanAiServiceImpl implements AiService {
         switch (lowerSkillType) {
             case "grammar":
                 quizInstruction = """
-                    Dựa vào phần lý thuyết ngữ pháp sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm tập trung vào DỊCH Việt-Hàn hoặc Hàn-Việt.
+                    Dựa vào phần lý thuyết ngữ pháp sau, hãy tạo chính xác 5 câu hỏi trắc nghiệm tập trung vào DỊCH Việt-Hàn hoặc Hàn-Việt.
                     YÊU CẦU RIÊNG CHO QUIZ NGỮ PHÁP:
                     - Mỗi câu phải kiểm tra việc dùng đúng cấu trúc ngữ pháp trong ngữ cảnh dịch.
                     - Ưu tiên dạng: "Câu nào dịch đúng câu tiếng Việt sau sang tiếng Hàn?" hoặc "Câu tiếng Hàn sau nghĩa là gì?".
@@ -187,15 +187,15 @@ public class DigitalOceanAiServiceImpl implements AiService {
                     """ + context;
                 break;
             case "listening":
-                quizInstruction = "Dựa trực tiếp vào transcript của bài nghe sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết nghe được hoặc suy luận gần từ transcript. TRANSCRIPT:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào transcript của bài nghe sau, hãy tạo chính xác 5 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết nghe được hoặc suy luận gần từ transcript. TRANSCRIPT:\n" + context;
                 break;
             case "reading":
-                quizInstruction = "Dựa trực tiếp vào đoạn đọc sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết, từ vựng trong ngữ cảnh hoặc suy luận từ bài đọc. ĐOẠN ĐỌC:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào đoạn đọc sau, hãy tạo chính xác 5 câu hỏi trắc nghiệm kiểm tra hiểu nội dung, ý chính, chi tiết, từ vựng trong ngữ cảnh hoặc suy luận từ bài đọc. ĐOẠN ĐỌC:\n" + context;
                 break;
             default:
-                quizInstruction = "Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 10 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
+                quizInstruction = "Dựa trực tiếp vào nội dung bài học sau, hãy tạo chính xác 5 câu hỏi trắc nghiệm kiểm tra nội dung trọng tâm của bài. Không tạo câu hỏi ngoài phạm vi nội dung đã cho. NỘI DUNG:\n" + context;
         }
-        quizInstruction = quizInstruction.replace("10 câu", safeQuizCount + " câu");
+        quizInstruction = quizInstruction.replace("5 câu", safeQuizCount + " câu");
 
         String userMsg = quizInstruction +
                 "TRẢ VỀ DUY NHẤT MỘT MẢNG JSON ARRAY CHỨA ĐÚNG " + safeQuizCount + " OBJECT (KHÔNG DÙNG FORMAT MARKDOWN), MỖI OBJECT CÓ CẤU TRÚC SAU:\n" +
