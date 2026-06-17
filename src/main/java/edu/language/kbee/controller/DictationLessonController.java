@@ -4,7 +4,6 @@ import edu.language.kbee.payload.DictationLessonDto;
 import edu.language.kbee.payload.request.DictationLessonRequest;
 import edu.language.kbee.service.DictationLessonService;
 import edu.language.kbee.service.AssemblyAiService;
-import edu.language.kbee.service.YoutubeSubtitleService;
 import edu.language.kbee.utils.TranscriptSplitter;
 import edu.language.kbee.payload.DictationSentenceDto;
 import tools.jackson.databind.JsonNode;
@@ -25,7 +24,6 @@ public class DictationLessonController {
 
     private final DictationLessonService dictationLessonService;
     private final AssemblyAiService assemblyAiService;
-    private final YoutubeSubtitleService youtubeSubtitleService;
 
     @GetMapping("/topics/{topicId}/lessons")
     public ResponseEntity<List<DictationLessonDto>> getLessonsByTopic(@PathVariable String topicId) {
@@ -83,18 +81,4 @@ public class DictationLessonController {
         }
     }
 
-    @PostMapping("/lessons/youtube-transcript")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> getYoutubeTranscript(@RequestBody Map<String, String> payload) {
-        try {
-            String youtubeId = payload.get("youtubeId");
-            if (youtubeId == null || youtubeId.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "YouTube ID is required"));
-            }
-            List<DictationSentenceDto> sentences = youtubeSubtitleService.extractSubtitles(youtubeId);
-            return ResponseEntity.ok(sentences);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage()));
-        }
-    }
 }
