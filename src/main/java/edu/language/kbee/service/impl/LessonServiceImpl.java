@@ -16,8 +16,11 @@ import edu.language.kbee.payload.response.LessonCompletionResponse;
 import edu.language.kbee.repository.LessonBlockRepository;
 import edu.language.kbee.repository.LessonProgressRepository;
 import edu.language.kbee.repository.LessonRepository;
+import edu.language.kbee.repository.QuizOptionRepository;
+import edu.language.kbee.repository.QuizQuestionRepository;
 import edu.language.kbee.repository.SubmissionRepository;
 import edu.language.kbee.repository.UnitRepository;
+import edu.language.kbee.repository.WritingTaskRepository;
 import edu.language.kbee.service.LessonService;
 import edu.language.kbee.service.UserActivityService;
 import edu.language.kbee.service.XpService;
@@ -52,6 +55,9 @@ public class LessonServiceImpl implements LessonService {
     private final ObjectMapper objectMapper;
     private final SubmissionRepository submissionRepository;
     private final LessonBlockRepository lessonBlockRepository;
+    private final QuizQuestionRepository quizQuestionRepository;
+    private final QuizOptionRepository quizOptionRepository;
+    private final WritingTaskRepository writingTaskRepository;
     private final XpService xpService;
 
     @Override
@@ -150,7 +156,7 @@ public class LessonServiceImpl implements LessonService {
             for (String oldId : oldBlockIds) {
                 if (!newBlockIds.contains(oldId)
                         && submissionRepository.existsByLesson_LessonIdAndBlock_BlockId(lessonId, oldId)) {
-                    throw new BadRequestException("Co hoc vien da nop block nay, khong the xoa");
+                    throw new BadRequestException("Có học viên đã nộp bài này, không thể xóa");
                 }
             }
 
@@ -179,7 +185,7 @@ public class LessonServiceImpl implements LessonService {
         for (String oldId : oldBlockIds) {
             if (!newBlockIds.contains(oldId)
                     && submissionRepository.existsByLesson_LessonIdAndBlock_BlockId(lessonId, oldId)) {
-                throw new BadRequestException("Co hoc vien da nop block nay, khong the xoa");
+                throw new BadRequestException("Có học viên đã nộp bài này, không thể xóa");
             }
         }
 
@@ -210,14 +216,14 @@ public class LessonServiceImpl implements LessonService {
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
         if (progressRepository.existsByLesson_LessonId(lessonId)) {
-            throw new BadRequestException("Bai hoc nay da co hoc vien lam bai, khong the xoa");
+            throw new BadRequestException("Có học viên đã nộp bài này, không thể xóa");
         }
 
         try {
             lessonRepository.delete(lesson);
             lessonRepository.flush();
         } catch (DataIntegrityViolationException | ConstraintViolationException e) {
-            throw new DataViolationException("Bai hoc co bai nop cua hoc vien. Khong the xoa");
+            throw new DataViolationException("Có học viên đã nộp bài này, không thể xóa");
         }
     }
 
@@ -469,17 +475,7 @@ public class LessonServiceImpl implements LessonService {
                 }
             }
             block.getQuizQuestions().add(question);
-        } else if (blockType == LessonBlockType.DICTATION) {
-            String promptText = readText(blockNode, "text");
-            DictationItem item = DictationItem.builder()
-                    .block(block)
-                    .promptText(promptText)
-                    .answerText(extractDictationAnswers(promptText))
-                    .audioUrl(readText(blockNode, "audioUrl"))
-                    .orderIndex(0)
-                    .build();
-            block.getDictationItems().add(item);
-        } else if (blockType == LessonBlockType.ESSAY
+        }  else if (blockType == LessonBlockType.ESSAY
                 || blockType == LessonBlockType.IMAGE_WRITING
                 || blockType == LessonBlockType.TRANSLATION) {
             WritingTask task = WritingTask.builder()
@@ -499,6 +495,29 @@ public class LessonServiceImpl implements LessonService {
     private List<Map<String, Object>> buildLessonBlockMaps(Lesson lesson) {
         List<LessonBlock> blocks = lessonBlockRepository.findByLesson_LessonIdOrderByOrderIndexAsc(lesson.getLessonId());
         List<Map<String, Object>> result = new ArrayList<>();
+        if (blocks.isEmpty()) {
+            return result;
+        }
+
+        List<String> blockIds = blocks.stream()
+                .map(LessonBlock::getBlockId)
+                .toList();
+
+        List<QuizQuestion> questions = quizQuestionRepository.findByBlock_BlockIdInOrderByOrderIndexAsc(blockIds);
+        Map<String, List<QuizQuestion>> questionsByBlock = questions.stream()
+                .collect(Collectors.groupingBy(question -> question.getBlock().getBlockId()));
+
+        List<String> questionIds = questions.stream()
+                .map(QuizQuestion::getQuestionId)
+                .toList();
+        Map<String, List<QuizOption>> optionsByQuestion = questionIds.isEmpty()
+                ? Map.of()
+                : quizOptionRepository.findByQuestion_QuestionIdInOrderByOrderIndexAsc(questionIds).stream()
+                        .collect(Collectors.groupingBy(option -> option.getQuestion().getQuestionId()));
+
+        Map<String, List<WritingTask>> writingTasksByBlock = writingTaskRepository.findByBlock_BlockIdIn(blockIds)
+                .stream()
+                .collect(Collectors.groupingBy(task -> task.getBlock().getBlockId()));
 
         for (LessonBlock block : blocks) {
             Map<String, Object> item = new LinkedHashMap<>();
@@ -507,26 +526,25 @@ public class LessonServiceImpl implements LessonService {
             item.put("type", block.getBlockType().name().toLowerCase());
             if (block.getTitle() != null) item.put("title", block.getTitle());
 
-            if (block.getBlockType() == LessonBlockType.QUIZ && !block.getQuizQuestions().isEmpty()) {
-                QuizQuestion question = block.getQuizQuestions().get(0);
+            List<QuizQuestion> blockQuestions = questionsByBlock.getOrDefault(block.getBlockId(), List.of());
+            List<WritingTask> blockWritingTasks = writingTasksByBlock.getOrDefault(block.getBlockId(), List.of());
+
+            if (block.getBlockType() == LessonBlockType.QUIZ && !blockQuestions.isEmpty()) {
+                QuizQuestion question = blockQuestions.get(0);
                 item.put("question", question.getQuestionText());
                 item.put("explanation", question.getExplanation());
-                item.put("options", question.getOptions().stream().map(option -> {
+                item.put("options", optionsByQuestion.getOrDefault(question.getQuestionId(), List.of()).stream().map(option -> {
                     Map<String, Object> optionMap = new LinkedHashMap<>();
                     optionMap.put("id", option.getOptionId());
                     optionMap.put("text", option.getOptionText());
                     optionMap.put("isCorrect", option.isCorrect());
                     return optionMap;
                 }).toList());
-            } else if (block.getBlockType() == LessonBlockType.DICTATION && !block.getDictationItems().isEmpty()) {
-                DictationItem itemData = block.getDictationItems().get(0);
-                item.put("text", itemData.getPromptText());
-                if (itemData.getAudioUrl() != null) item.put("audioUrl", itemData.getAudioUrl());
             } else if ((block.getBlockType() == LessonBlockType.ESSAY
                     || block.getBlockType() == LessonBlockType.IMAGE_WRITING
                     || block.getBlockType() == LessonBlockType.TRANSLATION)
-                    && !block.getWritingTasks().isEmpty()) {
-                WritingTask task = block.getWritingTasks().get(0);
+                    && !blockWritingTasks.isEmpty()) {
+                WritingTask task = blockWritingTasks.get(0);
                 if (block.getBlockType() == LessonBlockType.ESSAY || block.getBlockType() == LessonBlockType.IMAGE_WRITING) {
                     item.put("title", task.getPrompt());
                     item.put("instructions", task.getInstructions());

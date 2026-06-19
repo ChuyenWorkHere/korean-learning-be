@@ -3,11 +3,11 @@ package edu.language.kbee.repository;
 import edu.language.kbee.enums.LessonStatus;
 import edu.language.kbee.model.Lesson;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import edu.language.kbee.enums.LessonStatus;
 
 
 import java.util.List;
@@ -15,10 +15,13 @@ import java.util.List;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, String> {
 
+    @EntityGraph(attributePaths = {"unit", "unit.course"})
     List<Lesson> findByUnit_UnitIdOrderByOrderIndexAsc(String unitId);
 
+    @EntityGraph(attributePaths = {"unit", "unit.course"})
     List<Lesson> findByUnit_Course_CourseIdOrderByOrderIndexAsc(String courseId);
 
+    @EntityGraph(attributePaths = {"unit", "unit.course"})
     List<Lesson> findByUnit_Course_CourseIdOrderByUnit_OrderIndexAscOrderIndexAsc(String courseId);
 
     int countByUnit_UnitId(String unitId);

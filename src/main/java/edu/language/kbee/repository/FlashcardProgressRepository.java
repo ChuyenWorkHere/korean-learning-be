@@ -18,6 +18,14 @@ public interface FlashcardProgressRepository extends JpaRepository<FlashcardProg
 
     Optional<FlashcardProgress> findByUserAndFlashcard(User user, Flashcard flashcard);
 
+    @Query("SELECT fp FROM FlashcardProgress fp " +
+           "JOIN FETCH fp.flashcard f " +
+           "WHERE fp.user = :user AND f.cardId IN :cardIds")
+    List<FlashcardProgress> findByUserAndFlashcardCardIds(
+            @Param("user") User user,
+            @Param("cardIds") List<String> cardIds
+    );
+
     long countByFlashcard_Deck(FlashcardDeck deck);
 
     Long countByUserAndFlashcard_Deck(User user, FlashcardDeck deck);
@@ -27,7 +35,8 @@ public interface FlashcardProgressRepository extends JpaRepository<FlashcardProg
 
     // Get cards in a deck that have progress (either learning or due)
     @Query("SELECT fp FROM FlashcardProgress fp " +
-           "WHERE fp.user = :user AND fp.flashcard.deck = :deck " +
+           "JOIN FETCH fp.flashcard f " +
+           "WHERE fp.user = :user AND f.deck = :deck " +
            "AND fp.nextReviewDate <= :currentTime")
     List<FlashcardProgress> findDueCardsForUserAndDeck(
         @Param("user") User user, 
@@ -39,4 +48,10 @@ public interface FlashcardProgressRepository extends JpaRepository<FlashcardProg
     @Query("SELECT COUNT(fp) FROM FlashcardProgress fp " +
            "WHERE fp.user = :user AND fp.flashcard.deck = :deck AND fp.boxLevel >= 5")
     Long countMasteredCards(@Param("user") User user, @Param("deck") FlashcardDeck deck);
+
+    @Query("SELECT fp.flashcard.deck.deckId, COUNT(fp) " +
+           "FROM FlashcardProgress fp " +
+           "WHERE fp.user = :user AND fp.flashcard.deck.deckId IN :deckIds " +
+           "GROUP BY fp.flashcard.deck.deckId")
+    List<Object[]> countLearnedByUserAndDeckIds(@Param("user") User user, @Param("deckIds") List<String> deckIds);
 }

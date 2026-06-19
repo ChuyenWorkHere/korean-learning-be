@@ -3,12 +3,16 @@ package edu.language.kbee.service.impl;
 import edu.language.kbee.enums.RoleName;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.exception.UnauthorizedException;
+import edu.language.kbee.model.Flashcard;
 import edu.language.kbee.model.FlashcardDeck;
 import edu.language.kbee.model.User;
+import edu.language.kbee.payload.FlashcardDto;
 import edu.language.kbee.payload.FlashcardDeckDto;
+import edu.language.kbee.payload.UserDto;
 import edu.language.kbee.payload.request.DeckRequest;
 import edu.language.kbee.repository.FlashcardDeckRepository;
 import edu.language.kbee.repository.FlashcardProgressRepository;
+import edu.language.kbee.repository.FlashcardRepository;
 import edu.language.kbee.service.FlashcardDeckService;
 import edu.language.kbee.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
     private final FlashcardDeckRepository deckRepository;
+    private final FlashcardRepository flashcardRepository;
     private final FlashcardProgressRepository progressRepository;
     private final AuthUtil authUtil;
     private final ModelMapper mapper;
@@ -37,14 +44,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
     public List<FlashcardDeckDto> getMyDecks() {
         User user = authUtil.getLoggedInUser();
         List<FlashcardDeck> decks = deckRepository.findByUserAndDeletedAtIsNull(user);
-        return decks.stream()
-                .map(deck -> {
-                    FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
-                    Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(user, deck);
-                    dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return mapDecks(decks, user);
     }
 
     @Override
@@ -58,18 +58,7 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
 
         final User finalUser = user;
         List<FlashcardDeck> decks = deckRepository.findByIsPublicTrueAndDeletedAtIsNull();
-        return decks.stream()
-                .map(deck -> {
-                    FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
-                    if (finalUser != null) {
-                        Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(finalUser, deck);
-                        dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
-                    } else {
-                        dto.setLearnedCount(0L);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return mapDecks(decks, finalUser);
     }
 
     @Override
@@ -77,12 +66,9 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         User user = authUtil.getLoggedInUser();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<FlashcardDeck> decks = deckRepository.findByUserAndDeletedAtIsNull(user, pageable);
-        return decks.map(deck -> {
-            FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
-            Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(user, deck);
-            dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
-            return dto;
-        });
+        Map<String, FlashcardDeckDto> deckDtoMap = mapDecks(decks.getContent(), user).stream()
+                .collect(Collectors.toMap(FlashcardDeckDto::getDeckId, Function.identity()));
+        return decks.map(deck -> deckDtoMap.get(deck.getDeckId()));
     }
 
     @Override
@@ -97,16 +83,9 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         final User finalUser = user;
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<FlashcardDeck> decks = deckRepository.findByIsPublicTrueAndDeletedAtIsNull(pageable);
-        return decks.map(deck -> {
-            FlashcardDeckDto dto = mapper.map(deck, FlashcardDeckDto.class);
-            if (finalUser != null) {
-                Long learnedCount = progressRepository.countByUserAndFlashcard_Deck(finalUser, deck);
-                dto.setLearnedCount(learnedCount != null ? learnedCount : 0L);
-            } else {
-                dto.setLearnedCount(0L);
-            }
-            return dto;
-        });
+        Map<String, FlashcardDeckDto> deckDtoMap = mapDecks(decks.getContent(), finalUser).stream()
+                .collect(Collectors.toMap(FlashcardDeckDto::getDeckId, Function.identity()));
+        return decks.map(deck -> deckDtoMap.get(deck.getDeckId()));
     }
 
     @Override
@@ -173,5 +152,69 @@ public class FlashcardDeckServiceImpl implements FlashcardDeckService {
         if (!isOwner && !isAdmin) {
             throw new UnauthorizedException("Unauthorized", HttpStatus.UNAUTHORIZED);
         }
+    }
+
+    private List<FlashcardDeckDto> mapDecks(List<FlashcardDeck> decks, User currentUser) {
+        if (decks.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> deckIds = decks.stream()
+                .map(FlashcardDeck::getDeckId)
+                .toList();
+
+        Map<String, List<FlashcardDto>> cardsByDeck = flashcardRepository.findByDeck_DeckIdIn(deckIds).stream()
+                .collect(Collectors.groupingBy(
+                        card -> card.getDeck().getDeckId(),
+                        Collectors.mapping(this::mapFlashcardSummary, Collectors.toList())
+                ));
+
+        Map<String, Long> learnedCountByDeck = currentUser == null
+                ? Map.of()
+                : progressRepository.countLearnedByUserAndDeckIds(currentUser, deckIds).stream()
+                        .collect(Collectors.toMap(row -> (String) row[0], row -> (Long) row[1]));
+
+        return decks.stream()
+                .map(deck -> mapDeckSummary(deck, learnedCountByDeck, cardsByDeck))
+                .collect(Collectors.toList());
+    }
+
+    private FlashcardDeckDto mapDeckSummary(
+            FlashcardDeck deck,
+            Map<String, Long> learnedCountByDeck,
+            Map<String, List<FlashcardDto>> cardsByDeck
+    ) {
+        return FlashcardDeckDto.builder()
+                .deckId(deck.getDeckId())
+                .title(deck.getTitle())
+                .description(deck.getDescription())
+                .level(deck.getLevel())
+                .isPublic(deck.getIsPublic())
+                .learnedCount(learnedCountByDeck.getOrDefault(deck.getDeckId(), 0L))
+                .user(mapUserSummary(deck.getUser()))
+                .flashcards(cardsByDeck.getOrDefault(deck.getDeckId(), List.of()))
+                .build();
+    }
+
+    private FlashcardDto mapFlashcardSummary(Flashcard card) {
+        return FlashcardDto.builder()
+                .cardId(card.getCardId())
+                .word(card.getWord())
+                .meaning(card.getMeaning())
+                .exampleSentence(card.getExampleSentence())
+                .note(card.getNote())
+                .build();
+    }
+
+    private UserDto mapUserSummary(User user) {
+        if (user == null) {
+            return null;
+        }
+        return UserDto.builder()
+                .userId(user.getUserId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .userAvatar(user.getUserAvatar())
+                .build();
     }
 }
