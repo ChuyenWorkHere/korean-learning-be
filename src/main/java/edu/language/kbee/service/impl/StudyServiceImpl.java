@@ -1,12 +1,14 @@
 package edu.language.kbee.service.impl;
 
 import edu.language.kbee.enums.XpSourceType;
+import edu.language.kbee.exception.BadRequestException;
 import edu.language.kbee.exception.ResourceNotFoundException;
 import edu.language.kbee.model.Flashcard;
 import edu.language.kbee.model.FlashcardDeck;
 import edu.language.kbee.model.FlashcardProgress;
 import edu.language.kbee.model.User;
 import edu.language.kbee.payload.FlashcardDto;
+import edu.language.kbee.payload.request.StudyBatchResultRequest;
 import edu.language.kbee.payload.request.StudyResultRequest;
 import edu.language.kbee.payload.response.StudyResultResponse;
 import edu.language.kbee.repository.FlashcardDeckRepository;
@@ -25,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,72 +89,121 @@ public class StudyServiceImpl implements StudyService {
     @Override
     @Transactional
     public StudyResultResponse recordStudyResult(StudyResultRequest request) {
-        User user = authUtil.getLoggedInUser();
         Flashcard card = flashcardRepository.findById(request.getCardId())
+                .orElseThrow(() -> new ResourceNotFoundException("cardId", HttpStatus.NOT_FOUND));
+
+        return recordStudyResults(StudyBatchResultRequest.builder()
+                .deckId(card.getDeck().getDeckId())
+                .results(List.of(StudyBatchResultRequest.Item.builder()
+                        .cardId(request.getCardId())
+                        .score(request.getScore())
+                        .build()))
+                .build());
+    }
+
+    @Override
+    @Transactional
+    public StudyResultResponse recordStudyResults(StudyBatchResultRequest request) {
+        User user = authUtil.getLoggedInUser();
+        FlashcardDeck deck = deckRepository.findByDeckIdAndDeletedAtIsNull(request.getDeckId())
                 .orElseThrow(() -> new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND));
-        if (card.getDeck().getDeletedAt() != null) {
+
+        Map<String, Integer> scoreByCardId = new LinkedHashMap<>();
+        for (StudyBatchResultRequest.Item result : request.getResults()) {
+            scoreByCardId.put(result.getCardId(), result.getScore());
+        }
+
+        if (scoreByCardId.isEmpty()) {
+            throw new BadRequestException("Study results are required");
+        }
+
+        List<String> cardIds = new ArrayList<>(scoreByCardId.keySet());
+        List<Flashcard> cards = flashcardRepository.findByDeckAndCardIds(deck, cardIds);
+        if (cards.size() != cardIds.size()) {
             throw new ResourceNotFoundException("deckId", HttpStatus.NOT_FOUND);
         }
 
-        var existingProgress = progressRepository.findByUserAndFlashcard(user, card);
-        boolean isNewCardProgress = existingProgress.isEmpty();
+        Map<String, FlashcardProgress> progressByCardId = progressRepository
+                .findByUserAndFlashcardCardIds(user, cardIds)
+                .stream()
+                .collect(Collectors.toMap(p -> p.getFlashcard().getCardId(), p -> p));
 
-        FlashcardProgress progress = existingProgress
-                .orElse(FlashcardProgress.builder()
+        List<FlashcardProgress> progressesToSave = new ArrayList<>();
+        int newLearnedCount = 0;
+
+        for (Flashcard card : cards) {
+            int score = scoreByCardId.get(card.getCardId());
+            FlashcardProgress progress = progressByCardId.get(card.getCardId());
+            boolean isNewCardProgress = progress == null;
+
+            if (progress == null) {
+                progress = FlashcardProgress.builder()
                         .user(user)
                         .flashcard(card)
                         .boxLevel(1)
                         .consecutiveCorrectAnswers(0)
                         .nextReviewDate(LocalDateTime.now())
-                        .build());
-
-        int score = request.getScore(); // 0=Forgot, 1=Hard, 2=Good, 3=Easy
-        int currentBox = progress.getBoxLevel();
-        
-
-        if (score == 0) {
-            // Khó nên box thành 1
-            progress.setBoxLevel(1);
-            progress.setConsecutiveCorrectAnswers(0);
-            // ần ôn 5 phutsts
-            progress.setNextReviewDate(LocalDateTime.now().plusMinutes(5));
-        } else {
-            progress.setConsecutiveCorrectAnswers(progress.getConsecutiveCorrectAnswers() + 1);
-
-            if (score == 3) { // Easy - thêm 2 box
-                progress.setBoxLevel(Math.min(7, currentBox + 2));
-            } else if (score == 2) { // Good - thêm 1 box
-                progress.setBoxLevel(Math.min(7, currentBox + 1));
-            } else { // Hard - giữ nguyên
-                progress.setBoxLevel(currentBox);
+                        .build();
             }
 
-            // Tính ngày ôn tập
-            // Box 1: 1, Box 2: 3 , Box 3: 7, Box 4: 14, Box 5: 30, Box 6: 60, Box 7: 120
-            int daysToAdd = 1;
-            switch(progress.getBoxLevel()) {
-                case 1: daysToAdd = 1; break;
-                case 2: daysToAdd = 3; break;
-                case 3: daysToAdd = 7; break;
-                case 4: daysToAdd = 14; break;
-                case 5: daysToAdd = 30; break;
-                case 6: daysToAdd = 60; break;
-                case 7: daysToAdd = 120; break;
+            applyStudyScore(progress, score);
+            progressesToSave.add(progress);
+
+            if (isNewCardProgress && score > 0) {
+                newLearnedCount++;
             }
-            
-            progress.setNextReviewDate(LocalDateTime.now().plusDays(daysToAdd));
         }
 
-        progressRepository.save(progress);
+        progressRepository.saveAll(progressesToSave);
         userActivityService.recordActivity(user.getUserId());
 
-        var xpAward = isNewCardProgress && score > 0
-                ? xpService.awardXp(user.getUserId(), XpSourceType.VOCABULARY_LEARNED, card.getCardId(), 5, "Học từ vựng mới")
-                : xpService.awardXp(user.getUserId(), XpSourceType.VOCABULARY_LEARNED, card.getCardId(), 0, "Không cộng XP");
+        int awardedXp = newLearnedCount * 5;
+        var xpAward = awardedXp > 0
+                ? xpService.awardXp(
+                        user.getUserId(),
+                        XpSourceType.VOCABULARY_LEARNED,
+                        "vocab-batch-" + UUID.randomUUID(),
+                        awardedXp,
+                        "Học " + newLearnedCount + " từ vựng mới"
+                )
+                : xpService.awardXp(user.getUserId(), XpSourceType.VOCABULARY_LEARNED, null, 0, "Không cộng XP");
 
         return StudyResultResponse.builder()
                 .message("Study result recorded successfully")
                 .xpAward(xpAward)
                 .build();
+    }
+
+    private void applyStudyScore(FlashcardProgress progress, int score) {
+        int currentBox = progress.getBoxLevel();
+
+        if (score == 0) {
+            progress.setBoxLevel(1);
+            progress.setConsecutiveCorrectAnswers(0);
+            progress.setNextReviewDate(LocalDateTime.now().plusMinutes(5));
+            return;
+        }
+
+        progress.setConsecutiveCorrectAnswers(progress.getConsecutiveCorrectAnswers() + 1);
+
+        if (score == 3) {
+            progress.setBoxLevel(Math.min(7, currentBox + 2));
+        } else if (score == 2) {
+            progress.setBoxLevel(Math.min(7, currentBox + 1));
+        } else {
+            progress.setBoxLevel(currentBox);
+        }
+
+        int daysToAdd = switch (progress.getBoxLevel()) {
+            case 2 -> 3;
+            case 3 -> 7;
+            case 4 -> 14;
+            case 5 -> 30;
+            case 6 -> 60;
+            case 7 -> 120;
+            default -> 1;
+        };
+
+        progress.setNextReviewDate(LocalDateTime.now().plusDays(daysToAdd));
     }
 }

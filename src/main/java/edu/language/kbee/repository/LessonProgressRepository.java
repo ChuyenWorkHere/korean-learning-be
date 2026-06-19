@@ -2,11 +2,11 @@ package edu.language.kbee.repository;
 
 import edu.language.kbee.enums.ProgressStatus;
 import edu.language.kbee.model.LessonProgress;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import edu.language.kbee.enums.ProgressStatus;
 import edu.language.kbee.enums.LessonStatus;
 
 import java.util.List;
@@ -16,15 +16,20 @@ import java.util.Optional;
 public interface LessonProgressRepository extends JpaRepository<LessonProgress, Long> {
 
 
+    @EntityGraph(attributePaths = {"lesson", "lesson.unit", "lesson.unit.course"})
     Optional<LessonProgress> findFirstByUser_UserIdOrderByLastModifiedDateDesc(String userId);
 
     Optional<LessonProgress> findByUser_UserIdAndLesson_LessonId(String userId, String lessonId);
 
+    @EntityGraph(attributePaths = {"lesson", "lesson.unit", "lesson.unit.course"})
     List<LessonProgress> findByUser_UserIdAndStatusOrderByCompletedAtDesc(String userId, ProgressStatus status);
 
     @Query("SELECT lp FROM LessonProgress lp " +
+            "JOIN FETCH lp.lesson l " +
+            "JOIN FETCH l.unit u " +
+            "JOIN FETCH u.course c " +
             "WHERE lp.user.userId = :userId " +
-            "AND lp.lesson.unit.course.courseId = :courseId")
+            "AND c.courseId = :courseId")
     List<LessonProgress> findAllByUserIdAndCourseId(
             @Param("userId") String userId,
             @Param("courseId") String courseId

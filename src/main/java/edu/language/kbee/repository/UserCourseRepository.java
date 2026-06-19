@@ -1,6 +1,7 @@
 package edu.language.kbee.repository;
 
 import edu.language.kbee.model.UserCourse;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,10 +12,14 @@ import java.util.Optional;
 
 @Repository
 public interface UserCourseRepository extends JpaRepository<UserCourse, String> {
+    @EntityGraph(attributePaths = {"course"})
     List<UserCourse> findByUser_UserId(String userId);
+
+    @EntityGraph(attributePaths = {"course"})
     UserCourse findByUser_UserIdAndCourse_CourseId(String userId, String courseId);
     boolean existsByCourse_CourseId(String courseId);
 
+    @EntityGraph(attributePaths = {"course"})
     Optional<UserCourse> findFirstByUser_UserIdOrderByLastModifiedDateDesc(String userId);
 
     @Query("SELECT uc.course.courseId, COUNT(uc.id) " +

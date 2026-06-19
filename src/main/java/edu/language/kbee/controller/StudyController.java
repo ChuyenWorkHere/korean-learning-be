@@ -1,6 +1,7 @@
 package edu.language.kbee.controller;
 
 import edu.language.kbee.payload.FlashcardDto;
+import edu.language.kbee.payload.request.StudyBatchResultRequest;
 import edu.language.kbee.payload.request.StudyResultRequest;
 import edu.language.kbee.payload.response.StudyResultResponse;
 import edu.language.kbee.service.StudyService;
@@ -26,5 +27,10 @@ public class StudyController {
     @PostMapping("/result")
     public ResponseEntity<StudyResultResponse> recordStudyResult(@Valid @RequestBody StudyResultRequest request) {
         return ResponseEntity.ok(studyService.recordStudyResult(request));
+    }
+
+    @PostMapping("/results/batch")
+    public ResponseEntity<StudyResultResponse> recordStudyResults(@Valid @RequestBody StudyBatchResultRequest request) {
+        return ResponseEntity.ok(studyService.recordStudyResults(request));
     }
 }
